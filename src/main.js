@@ -831,7 +831,6 @@ async function loadCoursesForSelectedSchool() {
   const schoolIdx = regSchool.value;
   if (schoolIdx === '') return;
   coursesListContainer.innerHTML = '<div class="empty-state">Carregando cursos da escola...</div>';
-  if (packagesListContainer) packagesListContainer.innerHTML = '<div class="empty-state">Carregando trilhas da escola...</div>';
   selectedCourseIds.clear();
   updateSelectedCount();
   try {
