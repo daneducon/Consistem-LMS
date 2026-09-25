@@ -33,10 +33,10 @@ function showLoginError(message) {
 }
 
 function showAuthenticatedApp(user) {
-  authenticatedUserName.textContent = user.name || 'Usuario autorizado';
-  authenticatedUserEmail.textContent = user.email || '';
-  auditorName.textContent = user.name || 'Usuário autorizado';
-  auditorEmail.textContent = user.email || '';
+  if (authenticatedUserName) authenticatedUserName.textContent = user.name || 'Usuario autorizado';
+  if (authenticatedUserEmail) authenticatedUserEmail.textContent = user.email || '';
+  if (auditorName) auditorName.textContent = user.name || 'Usuário autorizado';
+  if (auditorEmail) auditorEmail.textContent = user.email || '';
   if (user.role === 'viewer') {
     document.querySelectorAll('[data-sidebar="register"], [data-sidebar="csv"]')
       .forEach((button) => { button.hidden = true; });
@@ -44,18 +44,23 @@ function showAuthenticatedApp(user) {
 
   if (user.picture) {
     const pictureUrl = safeHttpsUrl(user.picture);
-    authenticatedUserAvatar.textContent = '';
-    authenticatedUserAvatar.style.backgroundImage = pictureUrl ? `url("${pictureUrl}")` : '';
-    authenticatedUserAvatar.style.backgroundSize = 'cover';
-    authenticatedUserAvatar.style.backgroundPosition = 'center';
-    auditorAvatar.textContent = '';
-    auditorAvatar.style.backgroundImage = pictureUrl ? `url("${pictureUrl}")` : '';
-    auditorAvatar.style.backgroundSize = 'cover';
-    auditorAvatar.style.backgroundPosition = 'center';
+    if (authenticatedUserAvatar) {
+      authenticatedUserAvatar.textContent = '';
+      authenticatedUserAvatar.style.backgroundImage = pictureUrl ? `url("${pictureUrl}")` : '';
+      authenticatedUserAvatar.style.backgroundSize = 'cover';
+      authenticatedUserAvatar.style.backgroundPosition = 'center';
+    }
+    if (auditorAvatar) {
+      auditorAvatar.textContent = '';
+      auditorAvatar.style.backgroundImage = pictureUrl ? `url("${pictureUrl}")` : '';
+      auditorAvatar.style.backgroundSize = 'cover';
+      auditorAvatar.style.backgroundPosition = 'center';
+    }
   } else {
     const names = String(user.name || user.email || 'U').trim().split(/\s+/);
-    authenticatedUserAvatar.textContent = names.map((name) => name[0]).join('').slice(0, 2).toUpperCase();
-    auditorAvatar.textContent = authenticatedUserAvatar.textContent;
+    const initials = names.map((name) => name[0]).join('').slice(0, 2).toUpperCase();
+    if (authenticatedUserAvatar) authenticatedUserAvatar.textContent = initials;
+    if (auditorAvatar) auditorAvatar.textContent = initials;
   }
 
   document.body.classList.remove('auth-pending');
