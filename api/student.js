@@ -5,10 +5,21 @@ import { applyRateLimit, requireTrustedJsonRequest } from './security.js';
 
 const HOTSCOOL_API_URL = 'https://api.hotscool.com/v1';
 const HOTSCOOL_STUDENT_PORTAL_URL = process.env.HOTSCOOL_STUDENT_PORTAL_URL || 'https://app.hotscool.com';
+const DEFAULT_ACCESS_DAYS = Number(process.env.HOTSCOOL_DEFAULT_ACCESS_DAYS || 30);
 const fetchWithTimeout = (url, options = {}) => fetch(url, {
   ...options,
   signal: AbortSignal.timeout(10_000),
 });
+
+function getAccessLimitDates(days = DEFAULT_ACCESS_DAYS) {
+  const limit = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  // Formatos Hotscool: data_limite DD/MM/AAAA HH:mm:ss, data_expiracao DD/MM/AAAA
+  const data_limite = `${pad(limit.getDate())}/${pad(limit.getMonth() + 1)}/${limit.getFullYear()} ${pad(limit.getHours())}:${pad(limit.getMinutes())}:${pad(limit.getSeconds())}`;
+  const data_expiracao = `${pad(limit.getDate())}/${pad(limit.getMonth() + 1)}/${limit.getFullYear()}`;
+  const data_compra = `${pad(new Date().getDate())}/${pad(new Date().getMonth() + 1)}/${new Date().getFullYear()}`;
+  return { data_limite, data_expiracao, data_compra };
+}
 
 function getStudentPortalUrl(schoolName) {
   const normalizedName = String(schoolName || '')
@@ -481,6 +492,12 @@ export default async function handler(req, res) {
             if (estado) bodyPayload.estado = String(estado).trim().toUpperCase();
             if (bairro) bodyPayload.bairro = String(bairro).trim();
             if (complemento) bodyPayload.complemento = String(complemento).trim();
+            if (DEFAULT_ACCESS_DAYS > 0) {
+              const { data_limite, data_expiracao } = getAccessLimitDates();
+              // Tenta enviar limite para matrícula de curso (se API aceitar, aplica 30 dias)
+              bodyPayload.data_limite = data_limite;
+              bodyPayload.data_expiracao = data_expiracao;
+            }
             const response = await fetchWithTimeout(`${HOTSCOOL_API_URL}/students/enrollment`, {
               method: 'POST',
               headers: {
@@ -490,8 +507,26 @@ export default async function handler(req, res) {
               },
               body: JSON.stringify(bodyPayload),
             });
-            const resData = await response.json().catch(() => ({}));
-            if (!response.ok && response.status === 409) {
+            let resData = await response.json().catch(() => ({}));
+            // Fallback se data_limite não for suportado para cursos (400)
+            if (!response.ok && response.status === 400 && JSON.stringify(resData).toLowerCase().includes('data_limite') && bodyPayload.data_limite) {
+              delete bodyPayload.data_limite;
+              delete bodyPayload.data_expiracao;
+              const retryRes = await fetchWithTimeout(`${HOTSCOOL_API_URL}/students/enrollment`, {
+                method: 'POST',
+                headers: { 'x-access-token': targetSchool.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(bodyPayload),
+              });
+              const retryData = await retryRes.json().catch(() => ({}));
+              if (retryRes.ok) {
+                enrollResults.push({ courseId, ok: true, status: retryRes.status, data: retryData });
+              } else if (retryRes.status === 409) {
+                enrollResults.push({ courseId, ok: true, status: 200, data: { ...retryData, alreadyEnrolled: true }, rematricula: true });
+              } else {
+                console.error(`[Hotscool API ${retryRes.status}] Falha curso ${courseId} (retry sem limite)`);
+                enrollResults.push({ courseId, ok: false, status: retryRes.status, data: retryData });
+              }
+            } else if (!response.ok && response.status === 409) {
               enrollResults.push({ courseId, ok: true, status: 200, data: { ...resData, alreadyEnrolled: true }, rematricula: true });
             } else {
               if (!response.ok) console.error(`[Hotscool API ${response.status}] Falha curso ${courseId}`);
@@ -554,19 +589,32 @@ export default async function handler(req, res) {
           } else {
             for (const pkgId of uniquePackageIds) {
               try {
+                const { data_limite, data_expiracao, data_compra } = getAccessLimitDates();
+                const pkgBody = { id_aluno: studentIdForPackage, id_package: pkgId };
+                if (DEFAULT_ACCESS_DAYS > 0) {
+                  pkgBody.data_limite = data_limite;
+                  pkgBody.data_expiracao = data_expiracao;
+                  pkgBody.data_compra = data_compra;
+                }
                 const pkgRes = await fetchWithTimeout(`${HOTSCOOL_API_URL}/students/package/enrollment`, {
                   method: 'POST',
                   headers: { 'x-access-token': targetSchool.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                  body: JSON.stringify({ id_aluno: studentIdForPackage, id_package: pkgId }),
+                  body: JSON.stringify(pkgBody),
                 });
                 const pkgData = await pkgRes.json().catch(() => ({}));
                 if (!pkgRes.ok && pkgRes.status === 409) {
-                  // Já matriculado no pacote -> trata como sucesso e tenta reativar via PUT
+                  // Já matriculado no pacote -> trata como sucesso e tenta reativar via PUT com novo limite
                   try {
+                    const putBody = { id_aluno: studentIdForPackage, id_package: pkgId };
+                    if (DEFAULT_ACCESS_DAYS > 0) {
+                      const upd = getAccessLimitDates();
+                      putBody.data_limite = upd.data_limite;
+                      putBody.data_expiracao = upd.data_expiracao;
+                    }
                     await fetchWithTimeout(`${HOTSCOOL_API_URL}/students/package/enrollment/${studentIdForPackage}/${pkgId}`, {
                       method: 'PUT',
                       headers: { 'x-access-token': targetSchool.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                      body: JSON.stringify({ id_aluno: studentIdForPackage, id_package: pkgId }),
+                      body: JSON.stringify(putBody),
                     });
                   } catch {}
                   packageResults.push({ packageId: pkgId, ok: true, status: 200, data: { ...pkgData, alreadyEnrolled: true }, rematricula: true });
