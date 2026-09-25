@@ -309,11 +309,72 @@ export default async function handler(req, res) {
         return { ok: false, error: 'Um ou mais cursos não pertencem à escola selecionada.', student: { nome: cleanNome } };
       }
 
-      // === MATRÍCULA EM CURSOS ===
+      // === MATRÍCULA EM CURSOS (com suporte a REMATRÍCULA idempotente) ===
       if (uniqueCourseIds.length > 0) {
+        // Pré-busca: verifica se aluno já existe na escola alvo para rematrícula
+        let existingStudent = null;
+        let alreadyEnrolledIds = new Set();
+        try {
+          const allStudents = await fetchStudentsFromSchool(targetSchool.apiKey, false);
+          const found = allStudents.find((s) => isStudentMatch(s, cleanEmail));
+          if (found) {
+            existingStudent = found;
+            const cursos = Array.isArray(found.cursos_matriculados) ? found.cursos_matriculados : [];
+            cursos.forEach((c) => {
+              const cid = Number(c.id_curso);
+              if (Number.isSafeInteger(cid)) alreadyEnrolledIds.add(cid);
+            });
+          }
+        } catch (e) {
+          // Falha na busca não bloqueia fluxo; trata como aluno novo
+          console.error('[Rematricula] Falha ao buscar aluno existente:', e.message);
+        }
+
         const enrollResults = [];
 
         for (const courseId of uniqueCourseIds) {
+          // Caso 1: já matriculado -> reativa acesso (PUT) e conta como sucesso idempotente
+          if (existingStudent && alreadyEnrolledIds.has(courseId)) {
+            try {
+              const accessRes = await fetchWithTimeout(
+                `${HOTSCOOL_API_URL}/students/access/${existingStudent.id}/${courseId}/1`,
+                {
+                  method: 'PUT',
+                  headers: {
+                    'x-access-token': targetSchool.apiKey,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                  },
+                }
+              );
+              const accessData = await accessRes.json().catch(() => ({}));
+              if (accessRes.ok) {
+                console.log(`[Rematricula] Acesso reativado aluno ${existingStudent.id} curso ${courseId}`);
+              } else {
+                console.log(`[Rematricula] Já matriculado (sem reativação necessária) aluno ${existingStudent.id} curso ${courseId} status ${accessRes.status}`);
+              }
+              enrollResults.push({
+                courseId,
+                ok: true,
+                status: 200,
+                data: { alreadyEnrolled: true, reactivated: accessRes.ok, accessData },
+                rematricula: true,
+              });
+            } catch (accessErr) {
+              // Mesmo sem reativar, já matriculado = sucesso idempotente
+              enrollResults.push({
+                courseId,
+                ok: true,
+                status: 200,
+                data: { alreadyEnrolled: true, error: accessErr.message },
+                rematricula: true,
+              });
+            }
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            continue;
+          }
+
+          // Caso 2: matrícula nova (aluno novo ou curso novo para aluno existente)
           try {
             const bodyPayload = {
               nome: cleanNome,
@@ -347,16 +408,28 @@ export default async function handler(req, res) {
             });
 
             const resData = await response.json().catch(() => ({}));
-            if (!response.ok) {
-              console.error(`[Hotscool API ${response.status}] Falha de matrícula no curso ${courseId}.`);
-            }
 
-            enrollResults.push({
-              courseId,
-              ok: response.ok,
-              status: response.status,
-              data: resData,
-            });
+            // Hotscool retorna 409 quando matrícula já existe (race condition) -> tratar como sucesso idempotente
+            if (!response.ok && response.status === 409) {
+              console.log(`[Rematricula] 409 já matriculado, tratando como sucesso curso ${courseId}`);
+              enrollResults.push({
+                courseId,
+                ok: true,
+                status: 200,
+                data: { ...resData, alreadyEnrolled: true },
+                rematricula: true,
+              });
+            } else {
+              if (!response.ok) {
+                console.error(`[Hotscool API ${response.status}] Falha de matrícula no curso ${courseId}.`);
+              }
+              enrollResults.push({
+                courseId,
+                ok: response.ok,
+                status: response.status,
+                data: resData,
+              });
+            }
 
             // Pequena pausa para rate limit
             await new Promise((resolve) => setTimeout(resolve, 200));
@@ -386,12 +459,14 @@ export default async function handler(req, res) {
           return `Erro ${status} na API da Hotscool`;
         }
 
+        const rematriculas = enrollResults.filter((r) => r.rematricula).length;
         return {
           ok: successful.length > 0,
           nome: cleanNome,
           email: cleanEmail,
           totalMatriculas: successful.length,
           totalSolicitado: uniqueCourseIds.length,
+          rematriculas,
           falhas: failed.length,
             detalhesFalhas: failed.map((f) => ({
               courseId: f.courseId,
