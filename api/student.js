@@ -257,7 +257,16 @@ export default async function handler(req, res) {
         estado,
         bairro,
         complemento,
+        empresa,
+        origem,
+        projetoServ,
+        idEmpresa,
       } = student;
+      // Normaliza campos extra Universidade Consistem (aliases snake/camel)
+      const effEmpresa = String(empresa ?? student.empresa ?? student.Empresa ?? '').trim().slice(0, 200);
+      const effOrigem = String(origem ?? student.origem ?? student.Origem ?? '').trim().slice(0, 200);
+      const effProjetoServ = String(projetoServ ?? student.projetoServ ?? student.projeto_serv ?? student['Projeto Serv'] ?? '').trim().slice(0, 200);
+      const effIdEmpresa = String(idEmpresa ?? student.idEmpresa ?? student.id_empresa ?? student['ID Empresa'] ?? '').trim().slice(0, 100);
       // Normaliza packageIds aceitando múltiplos aliases (packageIds, trilhaIds, pacotes, trilhas)
       const rawPackageIdsInput = Array.isArray(packageIds) && packageIds.length ? packageIds
         : Array.isArray(trilhaIds) && trilhaIds.length ? trilhaIds
@@ -271,6 +280,7 @@ export default async function handler(req, res) {
         [cpf, 20], [ddd, 5], [celular, 30], [telefone, 30], [cep, 20],
         [endereco, 300], [numero, 20], [cidade, 150], [estado, 2],
         [bairro, 150], [complemento, 300],
+        [effEmpresa, 200], [effOrigem, 200], [effProjetoServ, 200], [effIdEmpresa, 100],
       ];
       if (boundedFields.some(([value, max]) => value != null && String(value).length > max)) {
         return { ok: false, error: 'Um ou mais campos excedem o tamanho permitido.', student: {} };
@@ -358,6 +368,59 @@ export default async function handler(req, res) {
           }
         } catch (e) {
           console.error('[Rematricula] Falha ao buscar aluno existente:', e.message);
+        }
+
+        // --- Campos extra Universidade Consistem ---
+        const camposExtras = [];
+        if (effEmpresa) camposExtras.push({ campo: 'Empresa', valor: effEmpresa });
+        if (effOrigem) camposExtras.push({ campo: 'Origem', valor: effOrigem });
+        if (effProjetoServ) camposExtras.push({ campo: 'Projeto Serv', valor: effProjetoServ });
+        if (effIdEmpresa) camposExtras.push({ campo: 'ID Empresa', valor: effIdEmpresa });
+        // Tenta sincronizar extra fields se houver (não bloqueia matrícula em caso de falha)
+        if (camposExtras.length > 0) {
+          try {
+            if (existingStudent?.id) {
+              // Atualiza aluno existente com extra fields
+              const extraRes = await fetchWithTimeout(`${HOTSCOOL_API_URL}/leads/extrafields/${existingStudent.id}`, {
+                method: 'PUT',
+                headers: { 'x-access-token': targetSchool.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ campos_extras: camposExtras }),
+              });
+              if (!extraRes.ok) {
+                // Fallback: tenta enrollment/extrafields
+                const fallbackRes = await fetchWithTimeout(`${HOTSCOOL_API_URL}/leads/enrollment/extrafields`, {
+                  method: 'POST',
+                  headers: { 'x-access-token': targetSchool.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                  body: JSON.stringify({ nome: cleanNome, email: cleanEmail, id_pais: paisNum, campos_extras: camposExtras }),
+                });
+                console.log(`[ExtraFields] sync fallback status ${fallbackRes.status} for ${cleanEmail}`);
+              } else {
+                console.log(`[ExtraFields] updated ${camposExtras.length} campos for aluno ${existingStudent.id}`);
+              }
+            } else {
+              // Aluno novo: cria via extrafields enrollment (será complementado pela matrícula de cursos abaixo)
+              const createExtraRes = await fetchWithTimeout(`${HOTSCOOL_API_URL}/leads/enrollment/extrafields`, {
+                method: 'POST',
+                headers: { 'x-access-token': targetSchool.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ nome: cleanNome, email: cleanEmail, id_pais: paisNum, campos_extras: camposExtras }),
+              });
+              if (createExtraRes.ok) {
+                const createData = await createExtraRes.json().catch(() => ({}));
+                const newId = createData.id || createData.data?.id;
+                if (newId && !existingStudent) {
+                  // Refetch para obter id para pacotes
+                  try {
+                    const refreshed = await fetchStudentsFromSchool(targetSchool.apiKey, true);
+                    const newly = refreshed.find((s) => isStudentMatch(s, cleanEmail));
+                    if (newly) existingStudent = newly;
+                  } catch {}
+                }
+                console.log(`[ExtraFields] created lead with extrafields for ${cleanEmail} status ${createExtraRes.status}`);
+              }
+            }
+          } catch (extraErr) {
+            console.error('[ExtraFields] falha ao sincronizar:', extraErr.message);
+          }
         }
 
         const enrollResults = [];
@@ -552,6 +615,11 @@ export default async function handler(req, res) {
       }
 
       // === CADASTRO COMO LEAD (sem cursos) ===
+      const leadCamposExtras = [];
+      if (effEmpresa) leadCamposExtras.push({ campo: 'Empresa', valor: effEmpresa });
+      if (effOrigem) leadCamposExtras.push({ campo: 'Origem', valor: effOrigem });
+      if (effProjetoServ) leadCamposExtras.push({ campo: 'Projeto Serv', valor: effProjetoServ });
+      if (effIdEmpresa) leadCamposExtras.push({ campo: 'ID Empresa', valor: effIdEmpresa });
       const leadPayload = {
         nome: cleanNome,
         email: cleanEmail,
@@ -559,7 +627,6 @@ export default async function handler(req, res) {
         id_pais: paisNum,
         enviar_email_notificacao: shouldNotifyEmail ? 1 : 0,
       };
-
       if (cleanCpf) leadPayload.cpf = cleanCpf;
       if (cleanDdd) leadPayload.ddd = cleanDdd;
       if (cleanTel) leadPayload.telefone = cleanTel;
@@ -569,15 +636,21 @@ export default async function handler(req, res) {
       if (cidade) leadPayload.cidade = String(cidade).trim();
       if (estado) leadPayload.estado = String(estado).trim().toUpperCase();
 
-      const leadResponse = await fetchWithTimeout(`${HOTSCOOL_API_URL}/leads/enrollment`, {
-        method: 'POST',
-        headers: {
-          'x-access-token': targetSchool.apiKey,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(leadPayload),
-      });
+      let leadResponse;
+      if (leadCamposExtras.length > 0) {
+        // Usa endpoint com extra fields para Universidade Consistem
+        leadResponse = await fetchWithTimeout(`${HOTSCOOL_API_URL}/leads/enrollment/extrafields`, {
+          method: 'POST',
+          headers: { 'x-access-token': targetSchool.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ ...leadPayload, campos_extras: leadCamposExtras }),
+        });
+      } else {
+        leadResponse = await fetchWithTimeout(`${HOTSCOOL_API_URL}/leads/enrollment`, {
+          method: 'POST',
+          headers: { 'x-access-token': targetSchool.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(leadPayload),
+        });
+      }
 
       return {
         ok: leadResponse.ok,

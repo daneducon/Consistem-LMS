@@ -1032,6 +1032,11 @@ const csvSchoolSelect = document.getElementById('csvSchoolSelect');
 const csvPaisSelect = document.getElementById('csvPaisSelect');
 const csvDefaultPassword = document.getElementById('csvDefaultPassword');
 const csvForceWelcomeEmail = document.getElementById('csvForceWelcomeEmail');
+const csvEmpresa = document.getElementById('csvEmpresa');
+const csvOrigem = document.getElementById('csvOrigem');
+const csvProjetoServ = document.getElementById('csvProjetoServ');
+const csvIdEmpresa = document.getElementById('csvIdEmpresa');
+const csvUniversidadeFields = document.getElementById('csvUniversidadeFields');
 const csvDropzone = document.getElementById('csvDropzone');
 const csvFileInput = document.getElementById('csvFileInput');
 const csvFileInfoBar = document.getElementById('csvFileInfoBar');
@@ -1187,9 +1192,27 @@ async function ensureCsvSchoolsLoaded() {
       return;
     }
     csvSchoolSelect.innerHTML = csvLoadedSchools.map((s) => `<option value="${Number(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+    updateUniversidadeFieldsVisibility();
   } catch (err) {
     csvSchoolSelect.innerHTML = '<option value="" disabled>Erro ao carregar escolas</option>';
   }
+}
+
+function isUniversidadeConsistemSelected() {
+  const idx = csvSchoolSelect?.value;
+  if (idx === '' || idx == null) return false;
+  const obj = csvLoadedSchools.find((s) => String(s.id) === String(idx));
+  const name = String(obj?.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return name.includes('universidade') || name.includes('consistem');
+}
+
+function updateUniversidadeFieldsVisibility() {
+  if (!csvUniversidadeFields) return;
+  csvUniversidadeFields.style.display = isUniversidadeConsistemSelected() ? 'block' : 'none';
+}
+
+if (csvSchoolSelect) {
+  csvSchoolSelect.addEventListener('change', updateUniversidadeFieldsVisibility);
 }
 
 // Drag & Drop
@@ -1253,7 +1276,7 @@ if (clearCsvBtn) {
 
 if (downloadTemplateBtn) {
   downloadTemplateBtn.addEventListener('click', () => {
-    const csv = 'nome;email;enviar email para definir senha;senha;ID dos Conteudos;cpf;endereco;numero;cidade;estado;cep;departamento;ddd;celular\n';
+    const csv = 'nome;email;enviar email para definir senha;senha;ID dos Conteudos;cpf;endereco;numero;cidade;estado;cep;departamento;ddd;celular;empresa;origem;projeto_serv;id_empresa\n';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -1339,6 +1362,11 @@ function parseCsvRows(text) {
     const departamento = row.departamento || row.dept || '';
     const ddd = row.ddd || '';
     const celular = row.celular || row.telefone || '';
+    // Campos extra Universidade Consistem
+    const empresa = row.empresa || row.emprs || '';
+    const origem = row.origem || row.origm || '';
+    const projetoServ = row.projetoserv || row.projetoservio || row.projetoservico || row.projeto || '';
+    const idEmpresa = row.idempresa || row.idempr || row.idemp || row.idempresa2 || '';
 
     const cleanedCoursesStr = String(rawCourses || '').replace(/["']/g, '').trim();
     const courseIdList = cleanedCoursesStr
@@ -1352,6 +1380,7 @@ function parseCsvRows(text) {
       shouldNotify, courseIds: courseIdList, cpf: cpf.trim(), ddd: ddd.trim(), celular: celular.trim(),
       cep: cep.trim(), endereco: endereco.trim(), numero: numero.trim(), cidade: cidade.trim(),
       estado: estado.trim(), departamento: departamento.trim(),
+      empresa: empresa.trim(), origem: origem.trim(), projetoServ: projetoServ.trim(), idEmpresa: idEmpresa.trim(),
     });
   }
   return parsedStudents;
@@ -1589,6 +1618,11 @@ if (btnExecuteEnrollments) {
         if (icon) { icon.className = 'log-icon running'; icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'; }
       }
 
+      // Campos Universidade Consistem: prioridade para valor da linha CSV, fallback para campo do lote
+      const effEmpresa = (student.empresa || csvEmpresa?.value.trim() || '');
+      const effOrigem = (student.origem || csvOrigem?.value.trim() || '');
+      const effProjetoServ = (student.projetoServ || csvProjetoServ?.value.trim() || '');
+      const effIdEmpresa = (student.idEmpresa || csvIdEmpresa?.value.trim() || '');
       try {
         const res = await fetch('/api/student', {
           method: 'POST',
@@ -1599,6 +1633,7 @@ if (btnExecuteEnrollments) {
             enviar_email_notificacao: student.shouldNotify ? 1 : 0,
             id_pais: idPais, schoolIndex: schoolIdx,
             courseIds: student.validCourseIds,
+            empresa: effEmpresa, origem: effOrigem, projetoServ: effProjetoServ, idEmpresa: effIdEmpresa,
           }),
         });
         const resData = await res.json();
