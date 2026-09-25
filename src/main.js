@@ -1208,7 +1208,7 @@ function isUniversidadeConsistemSelected() {
   if (idx === '' || idx == null) return false;
   const obj = csvLoadedSchools.find((s) => String(s.id) === String(idx));
   const name = String(obj?.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  return name.includes('universidade') || name.includes('consistem');
+  return name.includes('universidade');
 }
 
 function updateUniversidadeFieldsVisibility() {
