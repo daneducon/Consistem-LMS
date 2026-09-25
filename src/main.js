@@ -214,18 +214,22 @@ const dashKpiGamificationSub = document.getElementById('dashKpiGamificationSub')
 // Sub-abas
 const subtabCoursesBtn = document.querySelector('[data-subtab="courses"]');
 const subtabCertsBtn = document.querySelector('[data-subtab="certs"]');
+const subtabTrailsBtn = document.querySelector('[data-subtab="trails"]');
 const subtabGamificationBtn = document.querySelector('[data-subtab="gamification"]');
 const subtabAcademicBtn = document.querySelector('[data-subtab="academic"]');
 const subtabCourses = document.getElementById('subtabCourses');
 const subtabCerts = document.getElementById('subtabCerts');
+const subtabTrails = document.getElementById('subtabTrails');
 const subtabGamification = document.getElementById('subtabGamification');
 const subtabAcademic = document.getElementById('subtabAcademic');
 const countSubtabCourses = document.getElementById('countSubtabCourses');
 const countSubtabCerts = document.getElementById('countSubtabCerts');
+const countSubtabTrails = document.getElementById('countSubtabTrails');
 const subtabsSummary = document.getElementById('subtabsSummary');
 
 const dashCoursesContainer = document.getElementById('dashCoursesContainer');
 const dashCertsContainer = document.getElementById('dashCertsContainer');
+const dashTrailsContainer = document.getElementById('dashTrailsContainer');
 
 // Gamificacao
 const dashGamifLevelName = document.getElementById('dashGamifLevelName');
@@ -373,8 +377,8 @@ downloadStudentReportBtn?.addEventListener('click', async () => {
 });
 
 function switchDashboardSubtab(target) {
-  const allBtns = [subtabCoursesBtn, subtabCertsBtn, subtabGamificationBtn, subtabAcademicBtn];
-  const allPanels = [subtabCourses, subtabCerts, subtabGamification, subtabAcademic];
+  const allBtns = [subtabCoursesBtn, subtabCertsBtn, subtabTrailsBtn, subtabGamificationBtn, subtabAcademicBtn];
+  const allPanels = [subtabCourses, subtabCerts, subtabTrails, subtabGamification, subtabAcademic];
 
   allBtns.forEach((btn) => btn?.classList.remove('active'));
   allPanels.forEach((p) => {
@@ -384,7 +388,7 @@ function switchDashboardSubtab(target) {
     }
   });
 
-  const map = { courses: 0, certs: 1, gamification: 2, academic: 3 };
+  const map = { courses: 0, certs: 1, trails: 2, gamification: 3, academic: 4 };
   const idx = map[target];
   if (idx !== undefined && allBtns[idx] && allPanels[idx]) {
     allBtns[idx].classList.add('active');
@@ -395,6 +399,7 @@ function switchDashboardSubtab(target) {
 
 if (subtabCoursesBtn) subtabCoursesBtn.addEventListener('click', () => switchDashboardSubtab('courses'));
 if (subtabCertsBtn) subtabCertsBtn.addEventListener('click', () => switchDashboardSubtab('certs'));
+if (subtabTrailsBtn) subtabTrailsBtn.addEventListener('click', () => switchDashboardSubtab('trails'));
 if (subtabGamificationBtn) subtabGamificationBtn.addEventListener('click', () => switchDashboardSubtab('gamification'));
 if (subtabAcademicBtn) subtabAcademicBtn.addEventListener('click', () => switchDashboardSubtab('academic'));
 
@@ -510,6 +515,58 @@ function renderStudentCertificates(certs) {
     </div>`).join('');
 }
 
+function renderStudentTrails(trails) {
+  if (!dashTrailsContainer) return;
+  if (!trails || trails.length === 0) {
+    dashTrailsContainer.innerHTML = `
+      <div style="text-align:center;padding:48px 24px;color:var(--graphite-subtle);background:var(--surface-card);border:1px dashed var(--graphite-border);border-radius:var(--r-lg);">
+        Nenhuma trilha vinculada a este aluno. Matricule-o em uma trilha via aba Cadastro Individual.
+      </div>`;
+    return;
+  }
+  dashTrailsContainer.innerHTML = trails.map((t) => {
+    const perc = Math.min(100, Math.max(0, t.progresso || t.progress || 0));
+    const isDone = t.concluida || perc >= 100;
+    const isProgress = t.emAndamento || (perc > 0 && !isDone);
+    const statusText = isDone ? 'Concluída' : isProgress ? 'Em andamento' : 'Não iniciada';
+    const statusClass = isDone ? 'success' : isProgress ? 'warning' : '';
+    const total = t.totalCursos || (t.cursos ? t.cursos.length : 0);
+    const concluidos = t.concluidos || 0;
+    const matriculados = t.matriculados != null ? t.matriculados : total;
+    const cursosHtml = Array.isArray(t.cursos) && t.cursos.length
+      ? `<div style="margin-top:12px;display:flex;flex-direction:column;gap:6px;">${t.cursos.map((c) => {
+          const cp = Math.min(100, Math.max(0, c.percentual || 0));
+          const cdone = c.concluido || cp >= 100;
+          const dot = cdone ? '✓' : c.matriculado ? '●' : '○';
+          const col = cdone ? 'var(--success)' : c.matriculado ? 'var(--gold)' : 'var(--graphite-muted)';
+          return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:6px 8px;background:var(--surface-muted);border-radius:6px;">
+            <span style="display:flex;align-items:center;gap:6px;"><span style="color:${col};font-weight:700;">${dot}</span> ${escapeHtml(c.titulo_curso)}</span>
+            <span style="font-weight:600;color:${col};">${cp}%</span>
+          </div>`;
+        }).join('')}</div>`
+      : '';
+    return `
+      <div class="course-card" style="border-left:4px solid ${isDone ? 'var(--success)' : isProgress ? 'var(--gold)' : 'var(--graphite-border)'}">
+        <div class="course-card-body">
+          <div class="course-card-status">
+            <span class="status-pill ${statusClass}">${statusText}</span>
+            <span style="font-size:11px;color:var(--graphite-muted)">${concluidos}/${total} cursos • ${matriculados} matriculados</span>
+          </div>
+          <h4 class="course-card-title">${escapeHtml(t.nome || t.nome_trilha || 'Trilha')}</h4>
+          ${t.descricao ? `<p style="font-size:12px;color:var(--graphite-muted);margin:4px 0 8px;">${escapeHtml(t.descricao.slice(0,180))}</p>` : ''}
+          <div class="course-progress-section">
+            <div class="course-progress-row">
+              <span class="course-progress-label">Progresso da trilha</span>
+              <span class="course-progress-pct">${perc}%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-bar-fill ${isDone ? 'green' : perc>=50?'gold':''}" style="width:${perc}%"></div></div>
+          </div>
+          ${cursosHtml}
+        </div>
+      </div>`;
+  }).join('');
+}
+
 function showDashboard(data) {
   currentStudentDashboardData = data;
 
@@ -592,6 +649,7 @@ function showDashboard(data) {
   // Counters
   countSubtabCourses.textContent = String(data.totalCursos || 0);
   countSubtabCerts.textContent = String(data.totalCertificados || 0);
+  if (countSubtabTrails) countSubtabTrails.textContent = String(data.totalTrilhas || (Array.isArray(data.trilhas) ? data.trilhas.length : 0));
 
   const andamento = (data.totalCursos || 0) - (data.cursosConcluidos || 0);
   const concluidos = data.cursosConcluidos || 0;
@@ -602,6 +660,7 @@ function showDashboard(data) {
   // Render
   renderStudentCourses(data.cursos || []);
   renderStudentCertificates(data.certificados || []);
+  renderStudentTrails(data.trilhas || []);
   renderLearningProgress(data.cursos || []);
 
   // Gamificacao
@@ -619,7 +678,11 @@ function showDashboard(data) {
 
   if (Array.isArray(data.trilhas) && data.trilhas.length > 0) {
     dashDetailTrails.innerHTML = data.trilhas
-      .map((t) => `<span class="trail-chip">${escapeHtml(t.nome || t.titulo || 'Trilha')}</span>`)
+      .map((t) => {
+        const perc = t.progresso != null ? t.progresso : (t.progress || 0);
+        const done = t.concluida ? ' • Concluída' : t.emAndamento ? ` • ${perc}%` : '';
+        return `<span class="trail-chip" title="${escapeHtml(t.nome || t.titulo || 'Trilha')}${done}">${escapeHtml(t.nome || t.titulo || t.nome_trilha || 'Trilha')}${t.concluida ? ' ✓' : ''}</span>`;
+      })
       .join('');
   } else {
     dashDetailTrails.innerHTML = '<span class="trail-empty">Nenhuma trilha vinculada</span>';
@@ -738,7 +801,12 @@ const resetPasswordBtn = document.getElementById('resetPasswordBtn');
 
 let currentCourses = [];
 let selectedCourseIds = new Set();
+let currentPackages = [];
+let selectedPackageIds = new Set();
 let schoolsLoaded = false;
+const packagesListContainer = document.getElementById('packagesListContainer');
+const coursesToolbar = document.getElementById('coursesToolbar');
+let currentEnrollMode = 'courses';
 
 async function ensureSchoolsLoaded() {
   if (schoolsLoaded) return;
@@ -763,18 +831,71 @@ async function loadCoursesForSelectedSchool() {
   const schoolIdx = regSchool.value;
   if (schoolIdx === '') return;
   coursesListContainer.innerHTML = '<div class="empty-state">Carregando cursos da escola...</div>';
+  if (packagesListContainer) packagesListContainer.innerHTML = '<div class="empty-state">Carregando trilhas da escola...</div>';
   selectedCourseIds.clear();
+  selectedPackageIds.clear();
   updateSelectedCount();
   try {
-    const res = await fetch(`/api/courses?schoolIndex=${schoolIdx}`);
+    const res = await fetch(`/api/courses?schoolIndex=${schoolIdx}&packages=1`);
     if (!res.ok) throw new Error('Erro ao buscar cursos');
     const data = await res.json();
     currentCourses = Array.isArray(data.courses) ? data.courses : [];
+    currentPackages = Array.isArray(data.packages) ? data.packages : [];
     renderCoursesList(currentCourses);
+    renderPackagesList(currentPackages);
   } catch (err) {
     coursesListContainer.innerHTML = '<div class="empty-state">Nao foi possivel carregar os cursos desta escola.</div>';
+    if (packagesListContainer) packagesListContainer.innerHTML = '<div class="empty-state">Nao foi possivel carregar as trilhas.</div>';
   }
 }
+
+function renderPackagesList(packages) {
+  if (!packagesListContainer) return;
+  if (packages.length === 0) {
+    packagesListContainer.innerHTML = '<div class="empty-state">Nenhuma trilha/pacote ativo encontrada nesta escola.</div>';
+    return;
+  }
+  packagesListContainer.innerHTML = packages.map((p) => {
+    const pid = Number(p.id);
+    const isChecked = selectedPackageIds.has(pid);
+    const qtd = Array.isArray(p.cursos) ? p.cursos.length : 0;
+    return `
+      <label class="course-check-item ${isChecked ? 'selected' : ''}" data-id="${pid}">
+        <input type="checkbox" value="${pid}" ${isChecked ? 'checked' : ''}>
+        <div class="course-check-info">
+          <span class="course-check-name">${escapeHtml(p.nome)}</span>
+          <div class="course-check-meta">
+            <span>${qtd} curso(s) na trilha</span>
+            ${p.descricao ? `<span>• ${escapeHtml(p.descricao.slice(0,60))}</span>` : ''}
+          </div>
+        </div>
+        <span class="course-check-duration" style="background:var(--surface-muted);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 6h.01M8 6h.01M12 6h.01M8 12h.01M12 12h.01M16 12h.01M8 18h.01M12 18h.01M16 18h.01"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          Pacote
+        </span>
+      </label>`;
+  }).join('');
+  packagesListContainer.querySelectorAll('.course-check-item').forEach((item) => {
+    const cb = item.querySelector('input[type="checkbox"]');
+    const pid = Number(item.getAttribute('data-id'));
+    cb.addEventListener('change', (e) => {
+      if (e.target.checked) { selectedPackageIds.add(pid); item.classList.add('selected'); }
+      else { selectedPackageIds.delete(pid); item.classList.remove('selected'); }
+      updateSelectedCount();
+    });
+  });
+}
+
+function updateEnrollModeUI() {
+  const isPackage = currentEnrollMode === 'packages';
+  if (coursesListContainer) coursesListContainer.style.display = isPackage ? 'none' : 'block';
+  if (packagesListContainer) packagesListContainer.style.display = isPackage ? 'block' : 'none';
+  if (coursesToolbar) coursesToolbar.style.display = isPackage ? 'none' : 'flex';
+  updateSelectedCount();
+}
+document.querySelectorAll('input[name="enrollMode"]').forEach((r) => {
+  r.addEventListener('change', (e) => { currentEnrollMode = e.target.value; updateEnrollModeUI(); });
+});
 
 function renderCoursesList(courses) {
   if (courses.length === 0) {
@@ -818,36 +939,56 @@ function renderCoursesList(courses) {
 }
 
 function updateSelectedCount() {
-  const count = selectedCourseIds.size;
-  coursesBadge.textContent = `${count} curso${count === 1 ? '' : 's'} selecionado${count === 1 ? '' : 's'}`;
+  if (currentEnrollMode === 'packages') {
+    const count = selectedPackageIds.size;
+    coursesBadge.textContent = `${count} trilha${count === 1 ? '' : 's'} selecionada${count === 1 ? '' : 's'}`;
+  } else {
+    const count = selectedCourseIds.size;
+    coursesBadge.textContent = `${count} curso${count === 1 ? '' : 's'} selecionado${count === 1 ? '' : 's'}`;
+  }
 }
 
 if (courseFilterInput) {
   courseFilterInput.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase().trim();
-    const filtered = currentCourses.filter(
-      (c) => c.nome.toLowerCase().includes(term) || (c.categoria && c.categoria.toLowerCase().includes(term))
-    );
-    renderCoursesList(filtered);
+    if (currentEnrollMode === 'packages') {
+      const filtered = currentPackages.filter((p) => p.nome.toLowerCase().includes(term) || (p.descricao && p.descricao.toLowerCase().includes(term)));
+      renderPackagesList(filtered);
+    } else {
+      const filtered = currentCourses.filter(
+        (c) => c.nome.toLowerCase().includes(term) || (c.categoria && c.categoria.toLowerCase().includes(term))
+      );
+      renderCoursesList(filtered);
+    }
   });
 }
 
 if (selectAllBtn) {
   selectAllBtn.addEventListener('click', () => {
-    const term = courseFilterInput.value.toLowerCase().trim();
-    const visible = term ? currentCourses.filter((c) => c.nome.toLowerCase().includes(term)) : currentCourses;
-    visible.forEach((c) => selectedCourseIds.add(c.id));
-    renderCoursesList(visible);
+    if (currentEnrollMode === 'packages') {
+      currentPackages.forEach((p) => selectedPackageIds.add(p.id));
+      renderPackagesList(currentPackages);
+    } else {
+      const term = courseFilterInput.value.toLowerCase().trim();
+      const visible = term ? currentCourses.filter((c) => c.nome.toLowerCase().includes(term)) : currentCourses;
+      visible.forEach((c) => selectedCourseIds.add(c.id));
+      renderCoursesList(visible);
+    }
     updateSelectedCount();
   });
 }
 
 if (deselectAllBtn) {
   deselectAllBtn.addEventListener('click', () => {
-    selectedCourseIds.clear();
-    const term = courseFilterInput.value.toLowerCase().trim();
-    const visible = term ? currentCourses.filter((c) => c.nome.toLowerCase().includes(term)) : currentCourses;
-    renderCoursesList(visible);
+    if (currentEnrollMode === 'packages') {
+      selectedPackageIds.clear();
+      renderPackagesList(currentPackages);
+    } else {
+      selectedCourseIds.clear();
+      const term = courseFilterInput.value.toLowerCase().trim();
+      const visible = term ? currentCourses.filter((c) => c.nome.toLowerCase().includes(term)) : currentCourses;
+      renderCoursesList(visible);
+    }
     updateSelectedCount();
   });
 }
@@ -875,8 +1016,10 @@ if (clearRegisterBtn) {
     registerForm.reset();
     hideRegisterFeedback();
     selectedCourseIds.clear();
+    selectedPackageIds.clear();
     updateSelectedCount();
     renderCoursesList(currentCourses);
+    renderPackagesList(currentPackages);
   });
 }
 
@@ -906,19 +1049,25 @@ if (registerForm) {
     if (schoolIndex === '') { showRegisterFeedback('error', 'Por favor, selecione uma escola.'); return; }
 
     const courseIds = Array.from(selectedCourseIds);
+    const packageIds = Array.from(selectedPackageIds);
+    const usePackageMode = currentEnrollMode === 'packages';
+    const effectiveCourseIds = usePackageMode ? [] : courseIds;
+    const effectivePackageIds = usePackageMode ? packageIds : [];
     const selectedCourseTitles = currentCourses.filter((c) => selectedCourseIds.has(c.id)).map((c) => c.nome);
+    const selectedPackageTitles = currentPackages.filter((p) => selectedPackageIds.has(p.id)).map((p) => p.nome);
+
+    if (usePackageMode && effectivePackageIds.length === 0) { showRegisterFeedback('error', 'Selecione pelo menos uma trilha.'); return; }
 
     setRegisterLoading(true);
-    regBtnText.textContent = courseIds.length > 0
-      ? `Matriculando em ${courseIds.length} curso(s)...`
-      : 'Cadastrando aluno...';
+    if (usePackageMode) regBtnText.textContent = `Matriculando em ${effectivePackageIds.length} trilha(s)...`;
+    else regBtnText.textContent = courseIds.length > 0 ? `Matriculando em ${courseIds.length} curso(s)...` : 'Cadastrando aluno...';
 
     try {
       const res = await fetch('/api/student', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nome, email, password, schoolIndex, courseIds,
+          nome, email, password, schoolIndex, courseIds: effectiveCourseIds, packageIds: effectivePackageIds,
           enviar_email_notificacao: regSendEmail?.checked ? 1 : 0,
         }),
       });
@@ -930,9 +1079,11 @@ if (registerForm) {
 
       const cursosHtml = selectedCourseTitles.length > 0
         ? `<ul style="margin:8px 0 8px 20px;font-size:13px;">${selectedCourseTitles.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : '';
+      const pacotesHtml = selectedPackageTitles.length > 0
+        ? `<ul style="margin:8px 0 8px 20px;font-size:13px;">${selectedPackageTitles.map((t) => `<li>Trilha: ${escapeHtml(t)}</li>`).join('')}</ul>` : '';
 
       showRegisterFeedback('success',
-        `<strong>${escapeHtml(data.message)}</strong>${cursosHtml}` +
+        `<strong>${escapeHtml(data.message)}</strong>${cursosHtml}${pacotesHtml}` +
         `<p style="font-size:12px;margin-top:8px;opacity:0.7;">O cadastro e instantaneo. Pode levar alguns segundos para aparecer na consulta.</p>` +
         `<button type="button" id="goToSearchBtn" class="btn-coral" style="margin-top:12px;padding:8px 16px;font-size:13px;width:auto;">Ver cadastro deste aluno</button>`
       );
@@ -950,8 +1101,10 @@ if (registerForm) {
       regEmail.value = '';
       regPassword.value = '';
       selectedCourseIds.clear();
+      selectedPackageIds.clear();
       updateSelectedCount();
       renderCoursesList(currentCourses);
+      renderPackagesList(currentPackages);
     } catch (err) {
       showRegisterFeedback('error', 'Erro de comunicacao com o servidor. Verifique se o backend esta rodando.');
     } finally {

@@ -9,6 +9,7 @@ const fetchWithTimeout = (url, options = {}) => fetch(url, {
 
 // Cache em memória para os cursos de cada escola (TTL de 10 minutos)
 const coursesCache = new Map();
+const packagesCache = new Map();
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
 // Cache para nomes das escolas
@@ -183,6 +184,46 @@ export async function fetchCoursesFromSchool(apiKey) {
   return formatted;
 }
 
+export async function fetchPackagesFromSchool(apiKey) {
+  const cached = packagesCache.get(apiKey);
+  const now = Date.now();
+  if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+    return cached.packages;
+  }
+  try {
+    const response = await fetchWithTimeout(`${HOTSCOOL_API_URL}/packages`, {
+      method: 'GET',
+      headers: {
+        'x-access-token': apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      packagesCache.set(apiKey, { packages: [], timestamp: now });
+      return [];
+    }
+    const data = await response.json();
+    const list = Array.isArray(data) ? data : (data?.data || data?.packages || []);
+    const formatted = (Array.isArray(list) ? list : []).map((p) => ({
+      id: Number(p.id),
+      nome: String(p.nome || p.titulo || 'Pacote sem título').slice(0, 300),
+      descricao: String(p.descricao || '').slice(0, 5000),
+      status: String(p.status || 'Ativo').slice(0, 40),
+      cursos: Array.isArray(p.cursos) ? p.cursos.map((c) => ({
+        id: Number(c.id || c.id_curso),
+        nome: String(c.nome || c.titulo_curso || '').slice(0, 300),
+      })).filter((c) => Number.isSafeInteger(c.id)) : [],
+      escola: p.escola || null,
+    })).filter((p) => Number.isSafeInteger(p.id) && p.id > 0);
+    packagesCache.set(apiKey, { packages: formatted, timestamp: now });
+    return formatted;
+  } catch {
+    packagesCache.set(apiKey, { packages: [], timestamp: now });
+    return [];
+  }
+}
+
 export default async function handler(req, res) {
   const authenticatedUser = await requirePermission(req, res, 'courses:read');
   if (!authenticatedUser) return;
@@ -211,7 +252,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const { schoolIndex } = req.query;
+    const { schoolIndex, packages: packagesQuery } = req.query;
 
     // Se schoolIndex não for passado ou for 'all', retorna a lista de escolas com nomes reais
     if (schoolIndex === undefined || schoolIndex === '') {
@@ -241,6 +282,18 @@ export default async function handler(req, res) {
 
     const courses = await fetchCoursesFromSchool(targetSchool.apiKey);
     const realSchoolName = await fetchSchoolName(targetSchool.apiKey);
+
+    // Suporte a trilhas/packages: ?packages=1
+    if (packagesQuery === '1' || packagesQuery === 'true') {
+      const packages = await fetchPackagesFromSchool(targetSchool.apiKey);
+      return res.status(200).json({
+        school: { id: targetSchool.id, name: realSchoolName || targetSchool.name },
+        courses,
+        packages,
+        total: courses.length,
+        totalPackages: packages.length,
+      });
+    }
 
     return res.status(200).json({
       school: { id: targetSchool.id, name: realSchoolName || targetSchool.name },

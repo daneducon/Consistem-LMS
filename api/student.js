@@ -1,4 +1,4 @@
-import { fetchCoursesFromSchool } from './courses.js';
+import { fetchCoursesFromSchool, fetchPackagesFromSchool } from './courses.js';
 import { randomBytes } from 'node:crypto';
 import { filterAuthorizedSchools, requirePermission } from './auth-utils.js';
 import { applyRateLimit, requireTrustedJsonRequest } from './security.js';
@@ -215,11 +215,17 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'Escola selecionada não autorizada.' });
     }
     const schoolCourses = await fetchCoursesFromSchool(targetSchool.apiKey);
+    const schoolPackages = await fetchPackagesFromSchool(targetSchool.apiKey).catch(() => []);
     const inactiveStatuses = new Set(['inativo', 'inactive', 'arquivado', 'archived']);
     const allowedCourseIds = new Set(
       schoolCourses
         .filter((course) => !inactiveStatuses.has(String(course.status).trim().toLowerCase()))
         .map((course) => course.id)
+    );
+    const allowedPackageIds = new Set(
+      schoolPackages
+        .filter((pkg) => !inactiveStatuses.has(String(pkg.status).trim().toLowerCase()))
+        .map((pkg) => pkg.id)
     );
 
     // Função auxiliar para matricular um único aluno
@@ -234,6 +240,10 @@ export default async function handler(req, res) {
         senha,
         id_pais = 1,
         courseIds = [],
+        packageIds = [],
+        trilhaIds = [],
+        pacotes = [],
+        trilhas = [],
         enviar_email_notificacao,
         enviarEmailDefinirSenha,
         cpf,
@@ -248,6 +258,14 @@ export default async function handler(req, res) {
         bairro,
         complemento,
       } = student;
+      // Normaliza packageIds aceitando múltiplos aliases (packageIds, trilhaIds, pacotes, trilhas)
+      const rawPackageIdsInput = Array.isArray(packageIds) && packageIds.length ? packageIds
+        : Array.isArray(trilhaIds) && trilhaIds.length ? trilhaIds
+        : Array.isArray(pacotes) && pacotes.length ? pacotes
+        : Array.isArray(trilhas) && trilhas.length ? trilhas
+        : Array.isArray(student.id_packages) ? student.id_packages
+        : Array.isArray(student.packages) ? student.packages
+        : [];
 
       const boundedFields = [
         [cpf, 20], [ddd, 5], [celular, 30], [telefone, 30], [cep, 20],
@@ -309,9 +327,22 @@ export default async function handler(req, res) {
         return { ok: false, error: 'Um ou mais cursos não pertencem à escola selecionada.', student: { nome: cleanNome } };
       }
 
-      // === MATRÍCULA EM CURSOS (com suporte a REMATRÍCULA idempotente) ===
-      if (uniqueCourseIds.length > 0) {
-        // Pré-busca: verifica se aluno já existe na escola alvo para rematrícula
+      // Deduplica pacotes/trilhas
+      const normalizedPackageIds = rawPackageIdsInput.map(Number).filter((n) => Number.isSafeInteger(n) && n > 0);
+      if (rawPackageIdsInput.length > 0 && normalizedPackageIds.length === 0 && rawPackageIdsInput.some((v) => Number(v) > 0)) {
+        return { ok: false, error: 'A lista de trilhas/pacotes contém IDs inválidos.', student: { nome: cleanNome } };
+      }
+      const uniquePackageIds = [...new Set(normalizedPackageIds)];
+      if (uniquePackageIds.length > 20) {
+        return { ok: false, error: 'O aluno excede o limite de 20 trilhas/pacotes.', student: { nome: cleanNome } };
+      }
+      if (uniquePackageIds.some((id) => !allowedPackageIds.has(id))) {
+        return { ok: false, error: 'Uma ou mais trilhas/pacotes não pertencem à escola selecionada.', student: { nome: cleanNome } };
+      }
+
+      // === MATRÍCULA EM CURSOS E TRILHAS/PACOTES (rematrícula idempotente) ===
+      if (uniqueCourseIds.length > 0 || uniquePackageIds.length > 0) {
+        // Pré-busca: verifica se aluno já existe
         let existingStudent = null;
         let alreadyEnrolledIds = new Set();
         try {
@@ -326,14 +357,14 @@ export default async function handler(req, res) {
             });
           }
         } catch (e) {
-          // Falha na busca não bloqueia fluxo; trata como aluno novo
           console.error('[Rematricula] Falha ao buscar aluno existente:', e.message);
         }
 
         const enrollResults = [];
+        const packageResults = [];
 
+        // --- Cursos ---
         for (const courseId of uniqueCourseIds) {
-          // Caso 1: já matriculado -> reativa acesso (PUT) e conta como sucesso idempotente
           if (existingStudent && alreadyEnrolledIds.has(courseId)) {
             try {
               const accessRes = await fetchWithTimeout(
@@ -348,11 +379,6 @@ export default async function handler(req, res) {
                 }
               );
               const accessData = await accessRes.json().catch(() => ({}));
-              if (accessRes.ok) {
-                console.log(`[Rematricula] Acesso reativado aluno ${existingStudent.id} curso ${courseId}`);
-              } else {
-                console.log(`[Rematricula] Já matriculado (sem reativação necessária) aluno ${existingStudent.id} curso ${courseId} status ${accessRes.status}`);
-              }
               enrollResults.push({
                 courseId,
                 ok: true,
@@ -361,7 +387,6 @@ export default async function handler(req, res) {
                 rematricula: true,
               });
             } catch (accessErr) {
-              // Mesmo sem reativar, já matriculado = sucesso idempotente
               enrollResults.push({
                 courseId,
                 ok: true,
@@ -373,8 +398,6 @@ export default async function handler(req, res) {
             await new Promise((resolve) => setTimeout(resolve, 200));
             continue;
           }
-
-          // Caso 2: matrícula nova (aluno novo ou curso novo para aluno existente)
           try {
             const bodyPayload = {
               nome: cleanNome,
@@ -385,7 +408,6 @@ export default async function handler(req, res) {
               id_pais: paisNum,
               enviar_email_notificacao: shouldNotifyEmail ? 1 : 0,
             };
-
             if (cleanCpf) bodyPayload.cpf = cleanCpf;
             if (cleanDdd) bodyPayload.ddd = cleanDdd;
             if (cleanTel) bodyPayload.telefone = cleanTel;
@@ -396,7 +418,6 @@ export default async function handler(req, res) {
             if (estado) bodyPayload.estado = String(estado).trim().toUpperCase();
             if (bairro) bodyPayload.bairro = String(bairro).trim();
             if (complemento) bodyPayload.complemento = String(complemento).trim();
-
             const response = await fetchWithTimeout(`${HOTSCOOL_API_URL}/students/enrollment`, {
               method: 'POST',
               headers: {
@@ -406,73 +427,127 @@ export default async function handler(req, res) {
               },
               body: JSON.stringify(bodyPayload),
             });
-
             const resData = await response.json().catch(() => ({}));
-
-            // Hotscool retorna 409 quando matrícula já existe (race condition) -> tratar como sucesso idempotente
             if (!response.ok && response.status === 409) {
-              console.log(`[Rematricula] 409 já matriculado, tratando como sucesso curso ${courseId}`);
-              enrollResults.push({
-                courseId,
-                ok: true,
-                status: 200,
-                data: { ...resData, alreadyEnrolled: true },
-                rematricula: true,
-              });
+              enrollResults.push({ courseId, ok: true, status: 200, data: { ...resData, alreadyEnrolled: true }, rematricula: true });
             } else {
-              if (!response.ok) {
-                console.error(`[Hotscool API ${response.status}] Falha de matrícula no curso ${courseId}.`);
-              }
-              enrollResults.push({
-                courseId,
-                ok: response.ok,
-                status: response.status,
-                data: resData,
-              });
+              if (!response.ok) console.error(`[Hotscool API ${response.status}] Falha curso ${courseId}`);
+              enrollResults.push({ courseId, ok: response.ok, status: response.status, data: resData });
             }
-
-            // Pequena pausa para rate limit
             await new Promise((resolve) => setTimeout(resolve, 200));
           } catch (fetchErr) {
-            console.error(`[Hotscool Fetch Error] Falha de matrícula no curso ${courseId}.`);
-            enrollResults.push({
-              courseId,
-              ok: false,
-              status: 500,
-              data: { error: fetchErr.message },
-            });
+            enrollResults.push({ courseId, ok: false, status: 500, data: { error: fetchErr.message } });
           }
         }
 
-        const successful = enrollResults.filter((r) => r.ok);
-        const failed = enrollResults.filter((r) => !r.ok);
+        // --- Trilhas/Pacotes ---
+        if (uniquePackageIds.length > 0) {
+          // Garante id_aluno para package enrollment
+          let studentIdForPackage = existingStudent?.id || null;
+          // Se ainda não existe e houve matrícula de cursos acima que criou o aluno, refetch
+          if (!studentIdForPackage && enrollResults.some((r) => r.ok)) {
+            try {
+              const refreshed = await fetchStudentsFromSchool(targetSchool.apiKey, true);
+              const newly = refreshed.find((s) => isStudentMatch(s, cleanEmail));
+              if (newly) { studentIdForPackage = newly.id; existingStudent = newly; }
+            } catch {}
+          }
+          // Se ainda não existe (só pacotes), cria como lead primeiro
+          if (!studentIdForPackage) {
+            try {
+              const leadPayloadTmp = {
+                nome: cleanNome,
+                email: cleanEmail,
+                senha: cleanPassword,
+                id_pais: paisNum,
+                enviar_email_notificacao: shouldNotifyEmail ? 1 : 0,
+              };
+              if (cleanCpf) leadPayloadTmp.cpf = cleanCpf;
+              if (cleanDdd) leadPayloadTmp.ddd = cleanDdd;
+              if (cleanTel) leadPayloadTmp.telefone = cleanTel;
+              const leadRes = await fetchWithTimeout(`${HOTSCOOL_API_URL}/leads/enrollment`, {
+                method: 'POST',
+                headers: { 'x-access-token': targetSchool.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(leadPayloadTmp),
+              });
+              const leadData = await leadRes.json().catch(() => ({}));
+              if (leadRes.ok) {
+                studentIdForPackage = leadData.id || leadData.data?.id || null;
+              }
+              // Fallback refetch
+              if (!studentIdForPackage) {
+                const refreshed2 = await fetchStudentsFromSchool(targetSchool.apiKey, true);
+                const newly2 = refreshed2.find((s) => isStudentMatch(s, cleanEmail));
+                if (newly2) { studentIdForPackage = newly2.id; existingStudent = newly2; }
+              }
+            } catch (e) {
+              console.error('[Trilha] Falha ao criar aluno para pacote:', e.message);
+            }
+          }
+          if (!studentIdForPackage) {
+            uniquePackageIds.forEach((pkgId) => {
+              packageResults.push({ packageId: pkgId, ok: false, status: 404, data: { error: 'Aluno não encontrado para matrícula em trilha' } });
+            });
+          } else {
+            for (const pkgId of uniquePackageIds) {
+              try {
+                const pkgRes = await fetchWithTimeout(`${HOTSCOOL_API_URL}/students/package/enrollment`, {
+                  method: 'POST',
+                  headers: { 'x-access-token': targetSchool.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                  body: JSON.stringify({ id_aluno: studentIdForPackage, id_package: pkgId }),
+                });
+                const pkgData = await pkgRes.json().catch(() => ({}));
+                if (!pkgRes.ok && pkgRes.status === 409) {
+                  // Já matriculado no pacote -> trata como sucesso e tenta reativar via PUT
+                  try {
+                    await fetchWithTimeout(`${HOTSCOOL_API_URL}/students/package/enrollment/${studentIdForPackage}/${pkgId}`, {
+                      method: 'PUT',
+                      headers: { 'x-access-token': targetSchool.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                      body: JSON.stringify({ id_aluno: studentIdForPackage, id_package: pkgId }),
+                    });
+                  } catch {}
+                  packageResults.push({ packageId: pkgId, ok: true, status: 200, data: { ...pkgData, alreadyEnrolled: true }, rematricula: true });
+                } else {
+                  if (!pkgRes.ok) console.error(`[Hotscool API ${pkgRes.status}] Falha pacote ${pkgId}`);
+                  packageResults.push({ packageId: pkgId, ok: pkgRes.ok, status: pkgRes.status, data: pkgData, rematricula: pkgRes.ok && pkgData.alreadyEnrolled });
+                }
+                await new Promise((resolve) => setTimeout(resolve, 250));
+              } catch (pkgErr) {
+                packageResults.push({ packageId: pkgId, ok: false, status: 500, data: { error: pkgErr.message } });
+              }
+            }
+          }
+        }
 
-        // Helper para extrair mensagem legível de erro da Hotscool
+        const successfulCourses = enrollResults.filter((r) => r.ok);
+        const failedCourses = enrollResults.filter((r) => !r.ok);
+        const successfulPkgs = packageResults.filter((r) => r.ok);
+        const failedPkgs = packageResults.filter((r) => !r.ok);
         function formatHotscoolError(item) {
           const status = item.status;
-          if (status === 401 || status === 403) {
-            return `Chave de API sem permissão de escrita/matrícula na Hotscool (HTTP ${status}). Ative a permissão de escrita desta chave no painel Hotscool.`;
-          }
-          if (status === 400 || status === 422) return 'A Hotscool rejeitou os dados da matrícula.';
-          if (status === 409) return 'A matrícula já existe ou está em conflito.';
-          if (status === 429) return 'Limite temporário da Hotscool excedido.';
-          return `Erro ${status} na API da Hotscool`;
+          if (status === 401 || status === 403) return `Chave sem permissão (HTTP ${status})`;
+          if (status === 400 || status === 422) return 'A Hotscool rejeitou os dados.';
+          if (status === 409) return 'Já matriculado/conflito.';
+          if (status === 429) return 'Limite temporário excedido.';
+          if (status === 404) return item.data?.error || 'Não encontrado.';
+          return `Erro ${status} na Hotscool`;
         }
-
-        const rematriculas = enrollResults.filter((r) => r.rematricula).length;
+        const allSuccessful = successfulCourses.length + successfulPkgs.length;
+        const allFailed = failedCourses.length + failedPkgs.length;
+        const rematriculas = [...enrollResults, ...packageResults].filter((r) => r.rematricula).length;
         return {
-          ok: successful.length > 0,
+          ok: allSuccessful > 0,
           nome: cleanNome,
           email: cleanEmail,
-          totalMatriculas: successful.length,
+          totalMatriculas: successfulCourses.length,
           totalSolicitado: uniqueCourseIds.length,
+          totalPacotes: successfulPkgs.length,
+          totalPacotesSolicitados: uniquePackageIds.length,
           rematriculas,
-          falhas: failed.length,
-            detalhesFalhas: failed.map((f) => ({
-              courseId: f.courseId,
-              status: f.status,
-              error: formatHotscoolError(f),
-            })),
+          falhas: allFailed,
+          detalhesFalhas: [...failedCourses.map((f) => ({ courseId: f.courseId, status: f.status, error: formatHotscoolError(f) })), ...failedPkgs.map((f) => ({ packageId: f.packageId, status: f.status, error: formatHotscoolError(f) }))],
+          detalhesCursos: enrollResults,
+          detalhesPacotes: packageResults,
         };
       }
 
@@ -810,6 +885,91 @@ export default async function handler(req, res) {
       gamificacao.badge = s3Data.gamificacao.badge || null;
     }
 
+    // 6b. Trilhas/Pacotes enriquecidas com progresso
+    let trilhasEnriquecidas = [];
+    try {
+      const packagesCatalog = await fetchPackagesFromSchool(primarySchool.apiKey).catch(() => []);
+      const cursoProgressMap = new Map(cursosComProgresso.map((c) => [Number(c.id_curso), c]));
+      const rawTrilhas = Array.isArray(s3Data.trilhas) ? s3Data.trilhas : [];
+
+      // Helper para computar progresso de um pacote
+      const enrichPackage = (pkg, origem) => {
+        const pkgCursos = Array.isArray(pkg.cursos) ? pkg.cursos : [];
+        const cursosDaTrilha = pkgCursos.map((pc) => {
+          const prog = cursoProgressMap.get(Number(pc.id));
+          return {
+            id_curso: Number(pc.id),
+            titulo_curso: pc.nome || prog?.titulo_curso || `Curso #${pc.id}`,
+            percentual: prog?.percentual || 0,
+            percentualFormatado: prog?.percentualFormatado || '0%',
+            concluido: prog?.concluido || false,
+            matriculado: !!prog,
+            imagem: prog?.imagem || null,
+          };
+        });
+        const total = cursosDaTrilha.length;
+        const matriculados = cursosDaTrilha.filter((c) => c.matriculado).length;
+        const concluidos = cursosDaTrilha.filter((c) => c.concluido).length;
+        const soma = cursosDaTrilha.reduce((acc, c) => acc + (c.percentual || 0), 0);
+        const progresso = total > 0 ? Math.round(soma / total) : 0;
+        const concluida = total > 0 && matriculados === total && concluidos === total;
+        const emAndamento = matriculados > 0 && !concluida;
+        return {
+          id: pkg.id,
+          id_trilha: pkg.id,
+          nome: pkg.nome || origem?.nome_trilha || origem?.nome || 'Trilha',
+          descricao: pkg.descricao || '',
+          origem: origem ? 'hotscool_trilha' : 'pacote',
+          totalCursos: total,
+          matriculados,
+          concluidos,
+          progresso,
+          percentualFormatado: `${progresso}%`,
+          concluida,
+          emAndamento,
+          cursos: cursosDaTrilha,
+        };
+      };
+
+      // 1) Trilhas nativas da Hotscool
+      for (const t of rawTrilhas) {
+        const tid = Number(t.id_trilha || t.id);
+        const pkgMatch = packagesCatalog.find((p) => Number(p.id) === tid || String(p.nome).toLowerCase() === String(t.nome_trilha || t.nome || '').toLowerCase());
+        if (pkgMatch) {
+          trilhasEnriquecidas.push(enrichPackage(pkgMatch, t));
+        } else {
+          // Trilha sem pacote correspondente: estima progresso pelos cursos matriculados que pertencem ao nome
+          trilhasEnriquecidas.push({
+            id: tid || 0,
+            id_trilha: tid || 0,
+            nome: t.nome_trilha || t.nome || 'Trilha',
+            descricao: '',
+            origem: 'hotscool_trilha',
+            totalCursos: 0,
+            matriculados: 0,
+            concluidos: 0,
+            progresso: 0,
+            percentualFormatado: '0%',
+            concluida: false,
+            emAndamento: false,
+            cursos: [],
+          });
+        }
+      }
+      // 2) Pacotes onde aluno já tem pelo menos 1 curso, mas não está em s3Data.trilhas
+      for (const pkg of packagesCatalog) {
+        const jaExiste = trilhasEnriquecidas.some((tr) => Number(tr.id) === Number(pkg.id));
+        if (jaExiste) continue;
+        const temCursoDoPacote = pkg.cursos.some((pc) => cursoProgressMap.has(Number(pc.id)));
+        if (temCursoDoPacote) {
+          trilhasEnriquecidas.push(enrichPackage(pkg, null));
+        }
+      }
+    } catch (e) {
+      console.error('[Trilhas] Falha ao enriquecer trilhas:', e.message);
+      trilhasEnriquecidas = Array.isArray(s3Data.trilhas) ? s3Data.trilhas.map((t) => ({ ...t, nome: t.nome_trilha || t.nome, id_trilha: t.id_trilha || t.id, progresso: 0, concluida: false, cursos: [] })) : [];
+    }
+
     // 7. Cálculos de indicadores
     const totalCursos = cursosComProgresso.length;
     const cursosConcluidos = cursosComProgresso.filter((c) => c.concluido).length;
@@ -862,7 +1022,10 @@ export default async function handler(req, res) {
       departamento,
       unidade,
       cargo,
-      trilhas: Array.isArray(s3Data.trilhas) ? s3Data.trilhas : [],
+      trilhas: trilhasEnriquecidas,
+      trilhasRaw: Array.isArray(s3Data.trilhas) ? s3Data.trilhas : [],
+      totalTrilhas: trilhasEnriquecidas.length,
+      trilhasConcluidas: trilhasEnriquecidas.filter((t) => t.concluida).length,
       // Indicadores
       totalCursos,
       cursosConcluidos,
