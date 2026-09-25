@@ -801,12 +801,7 @@ const resetPasswordBtn = document.getElementById('resetPasswordBtn');
 
 let currentCourses = [];
 let selectedCourseIds = new Set();
-let currentPackages = [];
-let selectedPackageIds = new Set();
 let schoolsLoaded = false;
-const packagesListContainer = document.getElementById('packagesListContainer');
-const coursesToolbar = document.getElementById('coursesToolbar');
-let currentEnrollMode = 'courses';
 
 async function ensureSchoolsLoaded() {
   if (schoolsLoaded) return;
@@ -833,69 +828,17 @@ async function loadCoursesForSelectedSchool() {
   coursesListContainer.innerHTML = '<div class="empty-state">Carregando cursos da escola...</div>';
   if (packagesListContainer) packagesListContainer.innerHTML = '<div class="empty-state">Carregando trilhas da escola...</div>';
   selectedCourseIds.clear();
-  selectedPackageIds.clear();
   updateSelectedCount();
   try {
-    const res = await fetch(`/api/courses?schoolIndex=${schoolIdx}&packages=1`);
+    const res = await fetch(`/api/courses?schoolIndex=${schoolIdx}`);
     if (!res.ok) throw new Error('Erro ao buscar cursos');
     const data = await res.json();
     currentCourses = Array.isArray(data.courses) ? data.courses : [];
-    currentPackages = Array.isArray(data.packages) ? data.packages : [];
     renderCoursesList(currentCourses);
-    renderPackagesList(currentPackages);
   } catch (err) {
     coursesListContainer.innerHTML = '<div class="empty-state">Nao foi possivel carregar os cursos desta escola.</div>';
-    if (packagesListContainer) packagesListContainer.innerHTML = '<div class="empty-state">Nao foi possivel carregar as trilhas.</div>';
   }
 }
-
-function renderPackagesList(packages) {
-  if (!packagesListContainer) return;
-  if (packages.length === 0) {
-    packagesListContainer.innerHTML = '<div class="empty-state">Nenhuma trilha/pacote ativo encontrada nesta escola.</div>';
-    return;
-  }
-  packagesListContainer.innerHTML = packages.map((p) => {
-    const pid = Number(p.id);
-    const isChecked = selectedPackageIds.has(pid);
-    const qtd = Array.isArray(p.cursos) ? p.cursos.length : 0;
-    return `
-      <label class="course-check-item ${isChecked ? 'selected' : ''}" data-id="${pid}">
-        <input type="checkbox" value="${pid}" ${isChecked ? 'checked' : ''}>
-        <div class="course-check-info">
-          <span class="course-check-name">${escapeHtml(p.nome)}</span>
-          <div class="course-check-meta">
-            <span>${qtd} curso(s) na trilha</span>
-            ${p.descricao ? `<span>• ${escapeHtml(p.descricao.slice(0,60))}</span>` : ''}
-          </div>
-        </div>
-        <span class="course-check-duration" style="background:var(--surface-muted);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 6h.01M8 6h.01M12 6h.01M8 12h.01M12 12h.01M16 12h.01M8 18h.01M12 18h.01M16 18h.01"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-          Pacote
-        </span>
-      </label>`;
-  }).join('');
-  packagesListContainer.querySelectorAll('.course-check-item').forEach((item) => {
-    const cb = item.querySelector('input[type="checkbox"]');
-    const pid = Number(item.getAttribute('data-id'));
-    cb.addEventListener('change', (e) => {
-      if (e.target.checked) { selectedPackageIds.add(pid); item.classList.add('selected'); }
-      else { selectedPackageIds.delete(pid); item.classList.remove('selected'); }
-      updateSelectedCount();
-    });
-  });
-}
-
-function updateEnrollModeUI() {
-  const isPackage = currentEnrollMode === 'packages';
-  if (coursesListContainer) coursesListContainer.style.display = isPackage ? 'none' : 'block';
-  if (packagesListContainer) packagesListContainer.style.display = isPackage ? 'block' : 'none';
-  if (coursesToolbar) coursesToolbar.style.display = isPackage ? 'none' : 'flex';
-  updateSelectedCount();
-}
-document.querySelectorAll('input[name="enrollMode"]').forEach((r) => {
-  r.addEventListener('change', (e) => { currentEnrollMode = e.target.value; updateEnrollModeUI(); });
-});
 
 function renderCoursesList(courses) {
   if (courses.length === 0) {
@@ -939,56 +882,36 @@ function renderCoursesList(courses) {
 }
 
 function updateSelectedCount() {
-  if (currentEnrollMode === 'packages') {
-    const count = selectedPackageIds.size;
-    coursesBadge.textContent = `${count} trilha${count === 1 ? '' : 's'} selecionada${count === 1 ? '' : 's'}`;
-  } else {
-    const count = selectedCourseIds.size;
-    coursesBadge.textContent = `${count} curso${count === 1 ? '' : 's'} selecionado${count === 1 ? '' : 's'}`;
-  }
+  const count = selectedCourseIds.size;
+  coursesBadge.textContent = `${count} curso${count === 1 ? '' : 's'} selecionado${count === 1 ? '' : 's'}`;
 }
 
 if (courseFilterInput) {
   courseFilterInput.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase().trim();
-    if (currentEnrollMode === 'packages') {
-      const filtered = currentPackages.filter((p) => p.nome.toLowerCase().includes(term) || (p.descricao && p.descricao.toLowerCase().includes(term)));
-      renderPackagesList(filtered);
-    } else {
-      const filtered = currentCourses.filter(
-        (c) => c.nome.toLowerCase().includes(term) || (c.categoria && c.categoria.toLowerCase().includes(term))
-      );
-      renderCoursesList(filtered);
-    }
+    const filtered = currentCourses.filter(
+      (c) => c.nome.toLowerCase().includes(term) || (c.categoria && c.categoria.toLowerCase().includes(term))
+    );
+    renderCoursesList(filtered);
   });
 }
 
 if (selectAllBtn) {
   selectAllBtn.addEventListener('click', () => {
-    if (currentEnrollMode === 'packages') {
-      currentPackages.forEach((p) => selectedPackageIds.add(p.id));
-      renderPackagesList(currentPackages);
-    } else {
-      const term = courseFilterInput.value.toLowerCase().trim();
-      const visible = term ? currentCourses.filter((c) => c.nome.toLowerCase().includes(term)) : currentCourses;
-      visible.forEach((c) => selectedCourseIds.add(c.id));
-      renderCoursesList(visible);
-    }
+    const term = courseFilterInput.value.toLowerCase().trim();
+    const visible = term ? currentCourses.filter((c) => c.nome.toLowerCase().includes(term)) : currentCourses;
+    visible.forEach((c) => selectedCourseIds.add(c.id));
+    renderCoursesList(visible);
     updateSelectedCount();
   });
 }
 
 if (deselectAllBtn) {
   deselectAllBtn.addEventListener('click', () => {
-    if (currentEnrollMode === 'packages') {
-      selectedPackageIds.clear();
-      renderPackagesList(currentPackages);
-    } else {
-      selectedCourseIds.clear();
-      const term = courseFilterInput.value.toLowerCase().trim();
-      const visible = term ? currentCourses.filter((c) => c.nome.toLowerCase().includes(term)) : currentCourses;
-      renderCoursesList(visible);
-    }
+    selectedCourseIds.clear();
+    const term = courseFilterInput.value.toLowerCase().trim();
+    const visible = term ? currentCourses.filter((c) => c.nome.toLowerCase().includes(term)) : currentCourses;
+    renderCoursesList(visible);
     updateSelectedCount();
   });
 }
@@ -1016,10 +939,8 @@ if (clearRegisterBtn) {
     registerForm.reset();
     hideRegisterFeedback();
     selectedCourseIds.clear();
-    selectedPackageIds.clear();
     updateSelectedCount();
     renderCoursesList(currentCourses);
-    renderPackagesList(currentPackages);
   });
 }
 
@@ -1049,25 +970,19 @@ if (registerForm) {
     if (schoolIndex === '') { showRegisterFeedback('error', 'Por favor, selecione uma escola.'); return; }
 
     const courseIds = Array.from(selectedCourseIds);
-    const packageIds = Array.from(selectedPackageIds);
-    const usePackageMode = currentEnrollMode === 'packages';
-    const effectiveCourseIds = usePackageMode ? [] : courseIds;
-    const effectivePackageIds = usePackageMode ? packageIds : [];
     const selectedCourseTitles = currentCourses.filter((c) => selectedCourseIds.has(c.id)).map((c) => c.nome);
-    const selectedPackageTitles = currentPackages.filter((p) => selectedPackageIds.has(p.id)).map((p) => p.nome);
-
-    if (usePackageMode && effectivePackageIds.length === 0) { showRegisterFeedback('error', 'Selecione pelo menos uma trilha.'); return; }
 
     setRegisterLoading(true);
-    if (usePackageMode) regBtnText.textContent = `Matriculando em ${effectivePackageIds.length} trilha(s)...`;
-    else regBtnText.textContent = courseIds.length > 0 ? `Matriculando em ${courseIds.length} curso(s)...` : 'Cadastrando aluno...';
+    regBtnText.textContent = courseIds.length > 0
+      ? `Matriculando em ${courseIds.length} curso(s)...`
+      : 'Cadastrando aluno...';
 
     try {
       const res = await fetch('/api/student', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nome, email, password, schoolIndex, courseIds: effectiveCourseIds, packageIds: effectivePackageIds,
+          nome, email, password, schoolIndex, courseIds,
           enviar_email_notificacao: regSendEmail?.checked ? 1 : 0,
         }),
       });
@@ -1079,11 +994,9 @@ if (registerForm) {
 
       const cursosHtml = selectedCourseTitles.length > 0
         ? `<ul style="margin:8px 0 8px 20px;font-size:13px;">${selectedCourseTitles.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : '';
-      const pacotesHtml = selectedPackageTitles.length > 0
-        ? `<ul style="margin:8px 0 8px 20px;font-size:13px;">${selectedPackageTitles.map((t) => `<li>Trilha: ${escapeHtml(t)}</li>`).join('')}</ul>` : '';
 
       showRegisterFeedback('success',
-        `<strong>${escapeHtml(data.message)}</strong>${cursosHtml}${pacotesHtml}` +
+        `<strong>${escapeHtml(data.message)}</strong>${cursosHtml}` +
         `<p style="font-size:12px;margin-top:8px;opacity:0.7;">O cadastro e instantaneo. Pode levar alguns segundos para aparecer na consulta.</p>` +
         `<button type="button" id="goToSearchBtn" class="btn-coral" style="margin-top:12px;padding:8px 16px;font-size:13px;width:auto;">Ver cadastro deste aluno</button>`
       );
@@ -1101,10 +1014,8 @@ if (registerForm) {
       regEmail.value = '';
       regPassword.value = '';
       selectedCourseIds.clear();
-      selectedPackageIds.clear();
       updateSelectedCount();
       renderCoursesList(currentCourses);
-      renderPackagesList(currentPackages);
     } catch (err) {
       showRegisterFeedback('error', 'Erro de comunicacao com o servidor. Verifique se o backend esta rodando.');
     } finally {

@@ -190,38 +190,83 @@ export async function fetchPackagesFromSchool(apiKey) {
   if (cached && now - cached.timestamp < CACHE_TTL_MS) {
     return cached.packages;
   }
-  try {
-    const response = await fetchWithTimeout(`${HOTSCOOL_API_URL}/packages`, {
-      method: 'GET',
-      headers: {
-        'x-access-token': apiKey,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    });
-    if (!response.ok) {
-      packagesCache.set(apiKey, { packages: [], timestamp: now });
-      return [];
-    }
-    const data = await response.json();
-    const list = Array.isArray(data) ? data : (data?.data || data?.packages || []);
-    const formatted = (Array.isArray(list) ? list : []).map((p) => ({
-      id: Number(p.id),
-      nome: String(p.nome || p.titulo || 'Pacote sem título').slice(0, 300),
-      descricao: String(p.descricao || '').slice(0, 5000),
-      status: String(p.status || 'Ativo').slice(0, 40),
-      cursos: Array.isArray(p.cursos) ? p.cursos.map((c) => ({
-        id: Number(c.id || c.id_curso),
-        nome: String(c.nome || c.titulo_curso || '').slice(0, 300),
-      })).filter((c) => Number.isSafeInteger(c.id)) : [],
-      escola: p.escola || null,
-    })).filter((p) => Number.isSafeInteger(p.id) && p.id > 0);
-    packagesCache.set(apiKey, { packages: formatted, timestamp: now });
-    return formatted;
-  } catch {
-    packagesCache.set(apiKey, { packages: [], timestamp: now });
-    return [];
+  const candidates = [];
+  // Tenta endpoint oficial e variações paginadas/legadas para cobrir todos os pacotes/trilhas
+  const urls = [
+    `${HOTSCOOL_API_URL}/packages`,
+    `${HOTSCOOL_API_URL}/packages/all/0`,
+    `${HOTSCOOL_API_URL}/packages/all/1`,
+  ];
+  for (const url of urls) {
+    try {
+      const response = await fetchWithTimeout(url, {
+        method: 'GET',
+        headers: {
+          'x-access-token': apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+      if (!response.ok) continue;
+      const data = await response.json();
+      // Hotscool varia formato: array direto, {data:[]}, {packages:[]}, {result:[]}
+      const raw = Array.isArray(data) ? data : (data?.data || data?.packages || data?.result || data?.items || []);
+      const list = Array.isArray(raw) ? raw : [];
+      if (list.length > 0) {
+        candidates.push(...list);
+      }
+      // Se já pegou do /packages sem paginação, não precisa continuar se retornou <25
+      if (url === `${HOTSCOOL_API_URL}/packages` && list.length > 0) break;
+    } catch {}
   }
+  // Deduplica por id
+  const uniqMap = new Map();
+  for (const p of candidates) {
+    const id = Number(p.id);
+    if (!Number.isSafeInteger(id) || id <= 0) continue;
+    if (!uniqMap.has(id)) uniqMap.set(id, p);
+  }
+  const list = Array.from(uniqMap.values());
+  if (list.length === 0) {
+    // Fallback: tenta decodificar resposta bruta como array mesmo se candidatos vazios
+    try {
+      const r = await fetchWithTimeout(`${HOTSCOOL_API_URL}/packages`, {
+        method: 'GET', headers: { 'x-access-token': apiKey, 'Accept': 'application/json' },
+      });
+      if (r.ok) {
+        const j = await r.json();
+        console.log('[Packages] raw keys:', Object.keys(j || {}), 'isArray:', Array.isArray(j), 'len:', Array.isArray(j) ? j.length : (j?.data?.length || 0));
+      }
+    } catch {}
+  } else {
+    console.log(`[Packages] fetched ${list.length} packages:`, list.map((p) => `${p.id}:${p.nome}`).join(' | '));
+  }
+  const formatted = list.map((p) => ({
+    id: Number(p.id),
+    nome: String(p.nome || p.titulo || 'Pacote sem título').slice(0, 300),
+    // Decodifica entidades HTML da descrição (ex: &lt;p&gt; -> <p>)
+    descricao: String(p.descricao || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").slice(0, 5000),
+    status: String(p.status || 'Ativo').slice(0, 40),
+    cursos: Array.isArray(p.cursos) ? p.cursos.map((c) => ({
+      id: Number(c.id || c.id_curso),
+      nome: String(c.nome || c.titulo_curso || '').slice(0, 300),
+    })).filter((c) => Number.isSafeInteger(c.id)) : [],
+    escola: p.escola || null,
+  })).filter((p) => Number.isSafeInteger(p.id) && p.id > 0);
+  packagesCache.set(apiKey, { packages: formatted, timestamp: now });
+  return formatted;
+}
+
+export async function fetchPackagesFromAllSchools(apiKeys) {
+  const all = [];
+  const seen = new Set();
+  for (const key of apiKeys) {
+    const pkgs = await fetchPackagesFromSchool(key);
+    for (const p of pkgs) {
+      if (!seen.has(p.id)) { seen.add(p.id); all.push(p); }
+    }
+  }
+  return all;
 }
 
 export default async function handler(req, res) {

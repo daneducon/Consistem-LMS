@@ -587,20 +587,7 @@
             <span class="course-count-badge" id="coursesBadge">0 cursos selecionados</span>
           </div>
 
-          <!-- Toggle Cursos vs Trilha -->
-          <div class="enroll-mode-toggle" style="display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--graphite-border);background:var(--surface-muted);border-radius:8px;margin:12px 16px 0;">
-            <label style="flex:1;display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--graphite-border);border-radius:8px;cursor:pointer;background:white;">
-              <input type="radio" name="enrollMode" value="courses" checked>
-              <span style="font-size:13px;font-weight:600;">Cursos avulsos</span>
-            </label>
-            <label style="flex:1;display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--graphite-border);border-radius:8px;cursor:pointer;background:white;">
-              <input type="radio" name="enrollMode" value="packages">
-              <span style="font-size:13px;font-weight:600;">Trilha completa</span>
-              <span style="font-size:11px;color:var(--graphite-muted);">(pacote)</span>
-            </label>
-          </div>
-
-          <div class="courses-toolbar" id="coursesToolbar">
+          <div class="courses-toolbar">
             <div class="filter-input-wrapper">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
@@ -615,9 +602,6 @@
 
           <div id="coursesListContainer" class="courses-list">
             <div class="empty-state">Selecione uma escola para carregar os cursos disponiveis.</div>
-          </div>
-          <div id="packagesListContainer" class="courses-list" style="display:none">
-            <div class="empty-state">Selecione uma escola para carregar as trilhas disponíveis.</div>
           </div>
 
           <div class="license-warning">
