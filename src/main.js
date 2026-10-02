@@ -768,7 +768,9 @@ searchForm.addEventListener('submit', async (e) => {
 
       const summary = await summaryResponse.json();
       showDashboard(summary);
-      btnText.textContent = 'Carregando detalhes...';
+      // Badge honesto de progresso: o botão segue em loading (spinner) e os
+      // KPIs ganham shimmer até o estágio 2 chegar — sem delay artificial.
+      dashboard.classList.add('is-syncing');
 
       // Estágio 2: progresso por curso, certificados e gamificação.
       try {
@@ -779,6 +781,8 @@ searchForm.addEventListener('submit', async (e) => {
         }
       } catch {
         // Mantém o resumo visível; o usuário pode buscar de novo para detalhes.
+      } finally {
+        dashboard.classList.remove('is-syncing');
       }
       setSearchLoading(false);
       return;
