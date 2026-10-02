@@ -741,14 +741,15 @@ searchForm.addEventListener('submit', async (e) => {
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const response = await fetch(`/api/student?email=${encodeURIComponent(email)}&refresh=true`);
+      // Estágio 1 (rápido): identidade + cursos, sem os N relatórios de progresso.
+      const summaryResponse = await fetch(`/api/student?email=${encodeURIComponent(email)}&refresh=true&detail=summary`);
 
-      if (response.status === 400) {
+      if (summaryResponse.status === 400) {
         showSearchError('E-mail invalido. Verifique e tente novamente.');
         setSearchLoading(false);
         return;
       }
-      if (response.status === 404) {
+      if (summaryResponse.status === 404) {
         if (attempt < MAX_RETRIES) {
           btnText.textContent = `Aluno nao encontrado... tentativa ${attempt}/${MAX_RETRIES}`;
           await new Promise((r) => setTimeout(r, RETRY_DELAY));
@@ -759,14 +760,26 @@ searchForm.addEventListener('submit', async (e) => {
         setSearchLoading(false);
         return;
       }
-      if (!response.ok) {
+      if (!summaryResponse.ok) {
         showSearchError('Erro ao buscar dados do aluno. Tente novamente mais tarde.');
         setSearchLoading(false);
         return;
       }
 
-      const data = await response.json();
-      showDashboard(data);
+      const summary = await summaryResponse.json();
+      showDashboard(summary);
+      btnText.textContent = 'Carregando detalhes...';
+
+      // Estágio 2: progresso por curso, certificados e gamificação.
+      try {
+        const fullResponse = await fetch(`/api/student?email=${encodeURIComponent(email)}`);
+        if (fullResponse.ok) {
+          const data = await fullResponse.json();
+          showDashboard(data);
+        }
+      } catch {
+        // Mantém o resumo visível; o usuário pode buscar de novo para detalhes.
+      }
       setSearchLoading(false);
       return;
     } catch (err) {

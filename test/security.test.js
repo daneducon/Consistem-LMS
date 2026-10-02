@@ -9,7 +9,7 @@ import {
   isAuthConfigured,
   requirePermission,
 } from '../api/auth-utils.js';
-import { applyRateLimit, requireTrustedJsonRequest } from '../api/security.js';
+import { applyRateLimit, clientAddress, requireTrustedGetRequest, requireTrustedJsonRequest } from '../api/security.js';
 
 const createValidSecret = () => randomBytes(32).toString('hex');
 
@@ -103,4 +103,80 @@ test('rate limiter rejects requests above the configured window limit', () => {
     name: 'test-limit', identity: 'user-1', max: 1, windowMs: 60_000,
   }), false);
   assert.equal(rejected.statusCode, 429);
+});
+
+test('client address ignores forged X-Forwarded-For without a trusted proxy', () => {
+  const prevHops = process.env.TRUST_PROXY_HOPS;
+  const prevVercel = process.env.VERCEL;
+  delete process.env.TRUST_PROXY_HOPS;
+  delete process.env.VERCEL;
+  try {
+    assert.equal(clientAddress({
+      headers: { 'x-forwarded-for': '1.2.3.4' },
+      socket: { remoteAddress: '9.9.9.9' },
+    }), '9.9.9.9');
+  } finally {
+    if (prevHops === undefined) delete process.env.TRUST_PROXY_HOPS;
+    else process.env.TRUST_PROXY_HOPS = prevHops;
+    if (prevVercel === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = prevVercel;
+  }
+});
+
+test('client address uses the edge-appended IP behind a trusted proxy', () => {
+  const prevHops = process.env.TRUST_PROXY_HOPS;
+  process.env.TRUST_PROXY_HOPS = '1';
+  try {
+    assert.equal(clientAddress({
+      headers: { 'x-forwarded-for': '1.2.3.4, 5.6.7.8' },
+      socket: { remoteAddress: '10.0.0.1' },
+    }), '5.6.7.8');
+    assert.equal(clientAddress({
+      headers: { 'x-forwarded-for': 'garbage!!!' },
+      socket: { remoteAddress: '9.9.9.9' },
+    }), '9.9.9.9');
+  } finally {
+    if (prevHops === undefined) delete process.env.TRUST_PROXY_HOPS;
+    else process.env.TRUST_PROXY_HOPS = prevHops;
+  }
+});
+
+test('trusted GET requests enforce origin without breaking same-origin fetch', () => {
+  const prevOrigins = process.env.ALLOWED_ORIGINS;
+  process.env.ALLOWED_ORIGINS = 'https://lms.example.com';
+  try {
+    assert.equal(requireTrustedGetRequest({ headers: {
+      origin: 'https://lms.example.com',
+    } }, responseMock()), true);
+
+    const evilOrigin = responseMock();
+    assert.equal(requireTrustedGetRequest({ headers: {
+      origin: 'https://evil.example.com',
+    } }, evilOrigin), false);
+    assert.equal(evilOrigin.statusCode, 403);
+
+    const evilReferer = responseMock();
+    assert.equal(requireTrustedGetRequest({ headers: {
+      referer: 'https://evil.example.com/page',
+    } }, evilReferer), false);
+    assert.equal(evilReferer.statusCode, 403);
+
+    assert.equal(requireTrustedGetRequest({ headers: {
+      referer: 'https://lms.example.com/page',
+    } }, responseMock()), true);
+    assert.equal(requireTrustedGetRequest({ headers: {
+      'sec-fetch-site': 'same-origin',
+    } }, responseMock()), true);
+
+    const crossSite = responseMock();
+    assert.equal(requireTrustedGetRequest({ headers: {
+      'sec-fetch-site': 'cross-site',
+    } }, crossSite), false);
+    assert.equal(crossSite.statusCode, 403);
+
+    assert.equal(requireTrustedGetRequest({ headers: {} }, responseMock()), true);
+  } finally {
+    if (prevOrigins === undefined) delete process.env.ALLOWED_ORIGINS;
+    else process.env.ALLOWED_ORIGINS = prevOrigins;
+  }
 });

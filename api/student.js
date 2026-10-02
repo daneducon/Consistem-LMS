@@ -1,15 +1,20 @@
-import { fetchCoursesFromSchool, fetchPackagesFromSchool } from './courses.js';
+import {
+  HOTSCOOL_API_URL,
+  fetchCoursesFromSchool,
+  fetchPackagesFromSchool,
+  fetchStudentsFromSchool,
+  fetchWithTimeout,
+  getSchools,
+  hotscoolConcurrency,
+  invalidateSchoolCache,
+  mapWithConcurrency,
+} from './hotscool.js';
 import { randomBytes } from 'node:crypto';
 import { filterAuthorizedSchools, requirePermission } from './auth-utils.js';
-import { applyRateLimit, requireTrustedJsonRequest } from './security.js';
+import { applyRateLimit, requireTrustedGetRequest, requireTrustedJsonRequest } from './security.js';
 
-const HOTSCOOL_API_URL = 'https://api.hotscool.com/v1';
 const HOTSCOOL_STUDENT_PORTAL_URL = process.env.HOTSCOOL_STUDENT_PORTAL_URL || 'https://app.hotscool.com';
 const DEFAULT_ACCESS_DAYS = Number(process.env.HOTSCOOL_DEFAULT_ACCESS_DAYS || 30);
-const fetchWithTimeout = (url, options = {}) => fetch(url, {
-  ...options,
-  signal: AbortSignal.timeout(10_000),
-});
 
 function getAccessLimitDates(days = DEFAULT_ACCESS_DAYS) {
   const limit = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
@@ -40,107 +45,8 @@ function getStudentPortalUrl(schoolName) {
   return HOTSCOOL_STUDENT_PORTAL_URL;
 }
 
-const schoolCache = new Map();
-const CACHE_TTL_MS = 10 * 60 * 1000;
-
-export function getSchools() {
-  const schools = [];
-
-  const envKeys = Object.keys(process.env).filter((k) =>
-    /^HOTSCOOL_API_KEY_\d+$/i.test(k)
-  );
-  envKeys.sort((a, b) => Number(a.match(/\d+$/)[0]) - Number(b.match(/\d+$/)[0]));
-
-  envKeys.forEach((k) => {
-    const val = process.env[k]?.trim();
-    if (val) {
-      const id = Number(k.match(/\d+$/)[0]) - 1;
-      schools.push({
-        id,
-        name: `Escola ${id + 1}`,
-        apiKey: val,
-      });
-    }
-  });
-
-  if (schools.length === 0 && process.env.HOTSCOOL_API_KEYS) {
-    process.env.HOTSCOOL_API_KEYS.split(',').forEach((k, idx) => {
-      const val = k.trim();
-      if (val) {
-        schools.push({ id: idx, name: `Escola ${idx + 1}`, apiKey: val });
-      }
-    });
-  }
-
-  if (schools.length === 0 && process.env.HOTSCOOL_API_KEY) {
-    const val = process.env.HOTSCOOL_API_KEY.trim();
-    if (val) {
-      schools.push({ id: 0, name: 'Escola Principal', apiKey: val });
-    }
-  }
-
-  return schools;
-}
-
-async function fetchStudentsFromSchool(apiKey, forceRefresh = false) {
-  const cached = schoolCache.get(apiKey);
-  const now = Date.now();
-
-  if (!forceRefresh && cached && now - cached.timestamp < CACHE_TTL_MS) {
-    return cached.students;
-  }
-
-  const allStudents = [];
-  let page = 0;
-  let hasMore = true;
-  const BATCH_SIZE = 6;
-
-  while (hasMore && page < 60) {
-    const batchPages = Array.from({ length: BATCH_SIZE }, (_, i) => page + i);
-    const fetchPromises = batchPages.map(async (p) => {
-      try {
-        const response = await fetchWithTimeout(`${HOTSCOOL_API_URL}/students/all/${p}`, {
-          method: 'GET',
-          headers: {
-            'x-access-token': apiKey,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          return { page: p, ok: false, data: [] };
-        }
-
-        const data = await response.json();
-        const list = Array.isArray(data) ? data : (data?.data || []);
-        return { page: p, ok: true, data: Array.isArray(list) ? list : [] };
-      } catch (err) {
-        return { page: p, ok: false, data: [] };
-      }
-    });
-
-    const results = await Promise.all(fetchPromises);
-    results.sort((a, b) => a.page - b.page);
-
-    for (const res of results) {
-      if (!res.ok || res.data.length === 0) {
-        hasMore = false;
-        break;
-      }
-      allStudents.push(...res.data);
-      if (res.data.length < 25) {
-        hasMore = false;
-        break;
-      }
-    }
-
-    page += BATCH_SIZE;
-  }
-
-  schoolCache.set(apiKey, { students: allStudents, timestamp: now });
-  return allStudents;
-}
+// Re-exportado para compatibilidade com importadores existentes.
+export { getSchools };
 
 function isStudentMatch(student, targetEmail) {
   const primaryEmail = (student.email || '').trim().toLowerCase();
@@ -434,11 +340,10 @@ export default async function handler(req, res) {
           }
         }
 
-        const enrollResults = [];
         const packageResults = [];
 
-        // --- Cursos ---
-        for (const courseId of uniqueCourseIds) {
+        // --- Cursos (paralelismo limitado; sem sleeps fixos — retry em 429) ---
+        async function enrollCourse(courseId) {
           if (existingStudent && alreadyEnrolledIds.has(courseId)) {
             try {
               const accessRes = await fetchWithTimeout(
@@ -453,24 +358,22 @@ export default async function handler(req, res) {
                 }
               );
               const accessData = await accessRes.json().catch(() => ({}));
-              enrollResults.push({
+              return {
                 courseId,
                 ok: true,
                 status: 200,
                 data: { alreadyEnrolled: true, reactivated: accessRes.ok, accessData },
                 rematricula: true,
-              });
+              };
             } catch (accessErr) {
-              enrollResults.push({
+              return {
                 courseId,
                 ok: true,
                 status: 200,
                 data: { alreadyEnrolled: true, error: accessErr.message },
                 rematricula: true,
-              });
+              };
             }
-            await new Promise((resolve) => setTimeout(resolve, 200));
-            continue;
           }
           try {
             const bodyPayload = {
@@ -519,24 +422,24 @@ export default async function handler(req, res) {
               });
               const retryData = await retryRes.json().catch(() => ({}));
               if (retryRes.ok) {
-                enrollResults.push({ courseId, ok: true, status: retryRes.status, data: retryData });
+                return { courseId, ok: true, status: retryRes.status, data: retryData };
               } else if (retryRes.status === 409) {
-                enrollResults.push({ courseId, ok: true, status: 200, data: { ...retryData, alreadyEnrolled: true }, rematricula: true });
+                return { courseId, ok: true, status: 200, data: { ...retryData, alreadyEnrolled: true }, rematricula: true };
               } else {
                 console.error(`[Hotscool API ${retryRes.status}] Falha curso ${courseId} (retry sem limite)`);
-                enrollResults.push({ courseId, ok: false, status: retryRes.status, data: retryData });
+                return { courseId, ok: false, status: retryRes.status, data: retryData };
               }
             } else if (!response.ok && response.status === 409) {
-              enrollResults.push({ courseId, ok: true, status: 200, data: { ...resData, alreadyEnrolled: true }, rematricula: true });
+              return { courseId, ok: true, status: 200, data: { ...resData, alreadyEnrolled: true }, rematricula: true };
             } else {
               if (!response.ok) console.error(`[Hotscool API ${response.status}] Falha curso ${courseId}`);
-              enrollResults.push({ courseId, ok: response.ok, status: response.status, data: resData });
+              return { courseId, ok: response.ok, status: response.status, data: resData };
             }
-            await new Promise((resolve) => setTimeout(resolve, 200));
           } catch (fetchErr) {
-            enrollResults.push({ courseId, ok: false, status: 500, data: { error: fetchErr.message } });
+            return { courseId, ok: false, status: 500, data: { error: fetchErr.message } };
           }
         }
+        const enrollResults = await mapWithConcurrency(uniqueCourseIds, hotscoolConcurrency(), enrollCourse);
 
         // --- Trilhas/Pacotes ---
         if (uniquePackageIds.length > 0) {
@@ -587,7 +490,7 @@ export default async function handler(req, res) {
               packageResults.push({ packageId: pkgId, ok: false, status: 404, data: { error: 'Aluno não encontrado para matrícula em trilha' } });
             });
           } else {
-            for (const pkgId of uniquePackageIds) {
+            async function enrollPackage(pkgId) {
               try {
                 const { data_limite, data_expiracao, data_compra } = getAccessLimitDates();
                 const pkgBody = { id_aluno: studentIdForPackage, id_package: pkgId };
@@ -617,16 +520,16 @@ export default async function handler(req, res) {
                       body: JSON.stringify(putBody),
                     });
                   } catch {}
-                  packageResults.push({ packageId: pkgId, ok: true, status: 200, data: { ...pkgData, alreadyEnrolled: true }, rematricula: true });
+                  return { packageId: pkgId, ok: true, status: 200, data: { ...pkgData, alreadyEnrolled: true }, rematricula: true };
                 } else {
                   if (!pkgRes.ok) console.error(`[Hotscool API ${pkgRes.status}] Falha pacote ${pkgId}`);
-                  packageResults.push({ packageId: pkgId, ok: pkgRes.ok, status: pkgRes.status, data: pkgData, rematricula: pkgRes.ok && pkgData.alreadyEnrolled });
+                  return { packageId: pkgId, ok: pkgRes.ok, status: pkgRes.status, data: pkgData, rematricula: pkgRes.ok && pkgData.alreadyEnrolled };
                 }
-                await new Promise((resolve) => setTimeout(resolve, 250));
               } catch (pkgErr) {
-                packageResults.push({ packageId: pkgId, ok: false, status: 500, data: { error: pkgErr.message } });
+                return { packageId: pkgId, ok: false, status: 500, data: { error: pkgErr.message } };
               }
             }
+            packageResults.push(...await mapWithConcurrency(uniquePackageIds, hotscoolConcurrency(), enrollPackage));
           }
         }
 
@@ -714,7 +617,7 @@ export default async function handler(req, res) {
       // Se for apenas 1 aluno
       if (!isBatch) {
         const result = await processSingleStudent(studentsToProcess[0]);
-        schoolCache.clear();
+        invalidateSchoolCache(targetSchool.apiKey);
 
         if (!result.ok) {
           return res.status(400).json({
@@ -733,16 +636,15 @@ export default async function handler(req, res) {
         });
       }
 
-      // Se for lote (batch)
-      const batchResults = [];
-      for (const student of studentsToProcess) {
-        const r = await processSingleStudent(student);
-        batchResults.push(r);
-        // Pausa entre alunos para não sobrecarregar a API
-        await new Promise((resolve) => setTimeout(resolve, 150));
-      }
+      // Se for lote (batch): alunos em paralelo limitado (cada aluno já
+      // paraleliza cursos/pacotes com o mesmo limite via HOTSCOOL_CONCURRENCY)
+      const batchResults = await mapWithConcurrency(
+        studentsToProcess,
+        Math.min(3, hotscoolConcurrency()),
+        (student) => processSingleStudent(student),
+      );
 
-      schoolCache.clear();
+      invalidateSchoolCache(targetSchool.apiKey);
 
       const totalSucesso = batchResults.filter((r) => r.ok).length;
       const totalFalhas = batchResults.length - totalSucesso;
@@ -765,11 +667,14 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'GET, POST, OPTIONS');
     return res.status(405).json({ error: 'Método não permitido.' });
   }
+  if (!requireTrustedGetRequest(req, res)) return;
 
   // ==========================================
   // GET: Consulta detalhada de dados do aluno por e-mail (Dashboard 360°)
+  // detail=summary: estágio 1 progressivo (identidade + cursos, sem os
+  // N relatórios de progresso). O frontend renderiza e busca o full depois.
   // ==========================================
-  const { email, refresh } = req.query;
+  const { email, refresh, detail } = req.query;
   const forceRefresh = refresh === 'true' || refresh === '1';
 
   if (typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -780,13 +685,15 @@ export default async function handler(req, res) {
     const cleanEmail = email.trim().toLowerCase();
 
     // 1. Localiza o aluno em todas as escolas configuradas
-    const schoolSearches = schools.map(async (school) => {
-      const students = await fetchStudentsFromSchool(school.apiKey, forceRefresh);
-      const match = students.find((s) => isStudentMatch(s, cleanEmail));
-      return match ? { match, school } : null;
-    });
-
-    const searchResults = (await Promise.all(schoolSearches)).filter(Boolean);
+    const searchResults = (await mapWithConcurrency(
+      schools,
+      hotscoolConcurrency(),
+      async (school) => {
+        const students = await fetchStudentsFromSchool(school.apiKey, forceRefresh);
+        const match = students.find((s) => isStudentMatch(s, cleanEmail));
+        return match ? { match, school } : null;
+      },
+    )).filter(Boolean);
 
     if (searchResults.length === 0) {
       return res.status(404).json({ error: 'Aluno não encontrado em nenhuma das escolas.' });
@@ -817,14 +724,16 @@ export default async function handler(req, res) {
 
     // 3. Carrega os catálogos para enriquecer as matrículas com capa e descrição.
     const catalogsByApiKey = new Map(
-      await Promise.all(
-        searchResults.map(async ({ school }) => {
+      await mapWithConcurrency(
+        searchResults,
+        hotscoolConcurrency(),
+        async ({ school }) => {
           try {
             return [school.apiKey, await fetchCoursesFromSchool(school.apiKey)];
           } catch {
             return [school.apiKey, []];
           }
-        })
+        },
       )
     );
 
@@ -887,9 +796,53 @@ export default async function handler(req, res) {
 
     const cursosList = Array.from(cursosMap.values());
 
-    // 5. Busca em paralelo o relatório de progresso de cada curso
-    const cursosComProgresso = await Promise.all(
-      cursosList.map(async (curso) => {
+    // 4b. Resumo progressivo: identidade + cursos sem os N relatórios de
+    // progresso (rápido). O frontend renderiza e busca o full em seguida.
+    if (detail === 'summary') {
+      const summaryCourses = cursosList.map((curso) => {
+        const { studentId, schoolApiKey, ...publicFields } = curso;
+        return { ...publicFields, percentual: 0, percentualFormatado: '0%', concluido: false };
+      });
+      let summaryCadastro = null;
+      if (s3Data.data_cadastro) {
+        const parsed = new Date(s3Data.data_cadastro);
+        if (!isNaN(parsed)) summaryCadastro = parsed.toLocaleDateString('pt-BR');
+      }
+      return res.status(200).json({
+        detail: 'summary',
+        id: primaryStudentId,
+        nome: s3Data.nome || primaryStudent.nome || 'Nome não informado',
+        email: s3Data.email || primaryStudent.email || cleanEmail,
+        avatar: s3Data.avatar || primaryStudent.avatar || null,
+        status: 'Ativo',
+        emailConfirmado: s3Data.email_confirmado === 1,
+        codigoExterno: s3Data.codigo_externo || null,
+        dataCadastro: summaryCadastro,
+        ultimoAcesso: 'Sincronizando…',
+        escola: escolas.join(', '),
+        escolas,
+        departamento: s3Data.categorizacao?.departamento || s3Data.departamento || null,
+        unidade: s3Data.categorizacao?.unidade || null,
+        cargo: s3Data.categorizacao?.cargo || null,
+        trilhas: [],
+        trilhasRaw: [],
+        totalTrilhas: 0,
+        trilhasConcluidas: 0,
+        totalCursos: summaryCourses.length,
+        cursosConcluidos: 0,
+        progressoGeral: 0,
+        totalCertificados: 0,
+        cursos: summaryCourses,
+        certificados: [],
+        gamificacao: { pontos: 0, moedas: 0, acoes: 0, nivel: 'Sincronizando…', badge: null },
+      });
+    }
+
+    // 5. Busca com paralelismo limitado o relatório de progresso de cada curso
+    const cursosComProgresso = await mapWithConcurrency(
+      cursosList,
+      hotscoolConcurrency(),
+      async (curso) => {
         if (!curso.id_curso) {
           return {
             ...curso,
@@ -955,7 +908,7 @@ export default async function handler(req, res) {
           percentualFormatado: '0%',
           concluido: false,
         };
-      })
+      },
     );
 
     // 5. Busca Certificados Emitidos

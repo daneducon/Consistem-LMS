@@ -1,8 +1,41 @@
 const rateLimitBuckets = new Map();
 
-function clientAddress(req) {
-  const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
-  return forwarded || req.socket?.remoteAddress || 'unknown';
+function isValidIpToken(value) {
+  if (!value || value.length > 45) return false;
+  if (!/^[0-9a-fA-F:.]+$/.test(value)) return false;
+  return /[0-9]/.test(value);
+}
+
+function trustedProxyHops() {
+  const raw = process.env.TRUST_PROXY_HOPS ?? (process.env.VERCEL ? '1' : '0');
+  const hops = Number(raw);
+  return Number.isSafeInteger(hops) && hops >= 0 ? hops : 0;
+}
+
+// X-Forwarded-For é controlado pelo cliente: só confiamos nele quando há um
+// proxy confiável (ex.: edge da Vercel) que anexa o IP real ao final da cadeia.
+// Com TRUST_PROXY_HOPS=0 (dev local) o header é ignorado e vale o socket.
+export function clientAddress(req) {
+  const socketAddr = req.socket?.remoteAddress || 'unknown';
+  const hops = trustedProxyHops();
+  if (hops === 0) return socketAddr;
+
+  const realIp = String(req.headers['x-real-ip'] || '').trim();
+  if (realIp && isValidIpToken(realIp)) return realIp;
+
+  const chain = String(req.headers['x-forwarded-for'] || '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(isValidIpToken);
+  if (chain.length === 0) return socketAddr;
+  return chain[Math.min(Math.max(0, chain.length - hops), chain.length - 1)];
+}
+
+function getAllowedOrigins() {
+  return (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 }
 
 export function applyRateLimit(req, res, { name, identity, max, windowMs }) {
@@ -37,10 +70,7 @@ export function requireTrustedJsonRequest(req, res) {
     return false;
   }
 
-  const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  const allowedOrigins = getAllowedOrigins();
   const origin = req.headers.origin;
 
   if (allowedOrigins.length === 0) {
@@ -48,6 +78,50 @@ export function requireTrustedJsonRequest(req, res) {
     return false;
   }
   if (!origin || !allowedOrigins.includes(origin)) {
+    res.status(403).json({ error: 'Origem não autorizada.' });
+    return false;
+  }
+  return true;
+}
+
+// Defesa CSRF para GETs autenticados que retornam PII (student/courses/session).
+// Fetch same-origin em geral não envia `Origin` no GET, então aceitamos
+// `Sec-Fetch-Site: same-origin/same-site` e `Referer` da allowlist como prova.
+// Requisições sem nenhum desses sinais (curl, navegação direta) passam —
+// um atacante cross-site não consegue ler a resposta mesmo assim (CORS).
+export function requireTrustedGetRequest(req, res) {
+  const allowedOrigins = getAllowedOrigins();
+  if (allowedOrigins.length === 0) {
+    res.status(503).json({ error: 'Origens confiáveis não configuradas.' });
+    return false;
+  }
+
+  const origin = req.headers.origin;
+  if (origin) {
+    if (!allowedOrigins.includes(origin)) {
+      res.status(403).json({ error: 'Origem não autorizada.' });
+      return false;
+    }
+    return true;
+  }
+
+  const referer = req.headers.referer || req.headers.referrer;
+  if (referer) {
+    try {
+      const refererOrigin = new URL(String(referer)).origin;
+      if (!allowedOrigins.includes(refererOrigin)) {
+        res.status(403).json({ error: 'Origem não autorizada.' });
+        return false;
+      }
+      return true;
+    } catch {
+      res.status(403).json({ error: 'Origem não autorizada.' });
+      return false;
+    }
+  }
+
+  const fetchSite = String(req.headers['sec-fetch-site'] || '').toLowerCase();
+  if (fetchSite === 'cross-site') {
     res.status(403).json({ error: 'Origem não autorizada.' });
     return false;
   }

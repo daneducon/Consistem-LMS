@@ -24,3 +24,7 @@ AUTHORIZATION_POLICY={"auditor@example.com":{"role":"viewer","schools":[0]},"ope
 ## Controles de infraestrutura
 
 O rate limit da aplicação reduz abuso por instância, mas não é global em ambientes serverless. Configure também limites distribuídos no gateway, WAF ou Vercel Firewall por IP, usuário e rota, especialmente para `/api/auth/google` e `/api/student`.
+
+O IP do rate limit ignora `X-Forwarded-For` forjado: sem proxy confiável vale o socket; na Vercel (`TRUST_PROXY_HOPS=1`) vale o IP anexado pelo edge. Não aumente `TRUST_PROXY_HOPS` sem um proxy que anexe o IP real ao final da cadeia.
+
+GETs autenticados que retornam dados (`/api/student`, `/api/courses`, `/api/auth/session`) exigem origem da allowlist quando o navegador envia `Origin`/`Referer`, ou bloqueiam `Sec-Fetch-Site: cross-site`. Requisições sem esses sinais (curl, navegação direta) continuam passando.
