@@ -4,14 +4,15 @@ Fonte única da versão: `src/version.js` (`APP_VERSION`), exibida no rodapé da
 
 ## Formato
 
-`v<GERAÇÃO>.<RELEASE>` — ex.: `v3.0`, `v3.1`.
+`v<GERAÇÃO>.<RELEASE>` ou `v<GERAÇÃO>.<RELEASE>.<AJUSTE>` — ex.: `v5.0`, `v5.0.6`, `v5.1`.
 
 ## Política (revisar a cada melhoria solicitada)
 
 | Tipo de mudança | Ação |
 |---|---|
-| Aba nova, layout novo, estrutura nova (endpoint, modelo de dados, fluxo) | **+1 GERAÇÃO** (zera RELEASE: `v3.4` → `v4.0`) |
-| Todo o resto (correção, ajuste, refinamento, texto, performance) | **+1 RELEASE** (`v4.0` → `v4.1`) |
+| Aba nova, estrutura nova (endpoint, modelo de dados, fluxo) | **+1 GERAÇÃO** (zera RELEASE: `v4.4` → `v5.0`) |
+| Mudança de funcionalidade, tela nova ou regra nova | **+1 RELEASE** (`v5.0` → `v5.1`) |
+| Mudança só de layout/visual (cores, espaçamento, componentes, ícones) | **+1 AJUSTE** no terceiro número (`v5.0.5` → `v5.0.6`) |
 
 ## Checklist a cada entrega
 
@@ -26,29 +27,9 @@ Fonte única da versão: `src/version.js` (`APP_VERSION`), exibida no rodapé da
 
 ## Changelog
 
-### v5.6 — 22/11/2026 — Plano de aula no padrão DS Consistem (RELEASE)
-- Indicador de fases (atual em coral, concluída em verde, demais em cinza) no lugar do stepper em cartão; "Avançar" continua desabilitado até a planilha ser analisada.
-- Cartões, campos, área de upload, rodapés e mensagens com tokens da DS (bordas finas, raios, foco, espaçamentos 40/32/24).
-
-### v5.5 — 22/11/2026 — Avaliações no padrão DS Consistem (RELEASE)
-- Filtros em um cartão; indicadores agrupados com linhas finas; gráficos em cartões de borda fina, 40px entre colunas e 32px entre linhas.
-- Barra de busca da lista de alunos sem estilos inline; campo de pessoas sem o botão "Limpar" visível quando vazio.
-
-### v5.4 — 22/11/2026 — Cabeçalho dos cursos na Consulta do aluno (RELEASE)
-- Abas numa linha, sem barra de rolagem visível; resumo e ordenação em linha própria abaixo das abas.
-
-### v5.3 — 22/11/2026 — Licenças e riscos no padrão DS Consistem (RELEASE)
-- Indicadores agrupados em um cartão; "Usuários por escola" com barras de proporção e "Próximos vencimentos" (linha do tempo das matrículas ativas que vencem em até 60 dias) lado a lado.
-- Tabela em cartão próprio com ações sem quebra de texto; cores e espaçamentos por token.
-
-### v5.2 — 22/11/2026 — Consulta do aluno no padrão DS Consistem (RELEASE)
-- Indicadores agrupados em um único cartão; perfil, gráficos e registro com espaçamentos e bordas por token.
-- Novo anel "Status das inscrições" (concluídas × em andamento) com dados reais da consulta.
-- Gráficos antes das abas; abas com indicador coral de 2px; botão "Continuar curso" em contorno (coral só na ação principal).
-
-### v5.1 — 22/11/2026 — Tela de login no padrão DS Consistem (RELEASE)
-- Eyebrow com ponto coral em DM Mono, título em peso Regular com entrelinha justa, subtítulo no estilo lead, espaçamentos, raios e sombra por token.
-- Fonte DM Mono carregada para o eyebrow.
+### v5.0.6 — 22/11/2026 — Layout no padrão DS Consistem (AJUSTE)
+- Login, Consulta do aluno, Licenças e riscos, Avaliações, Plano de aula e cabeçalho dos cursos com tokens, espaçamentos e componentes da DS (indicadores agrupados, anel de status, linha do tempo de vencimentos, fases coral/verde/cinza).
+- Unifica as versões 5.1 a 5.6 anteriores, que eram só de layout.
 
 ### v5.0 — 22/11/2026 — Fluxo em blocos e curso obrigatório (GERAÇÃO nova)
 - Cadastro individual (agora "Matrícula individual") em blocos numerados, com indicador de fase (atual em coral, concluída em verde, demais em cinza) e painel "Confirmar" com resumo.
