@@ -1036,6 +1036,8 @@ function renderCoursesList(courses) {
 function updateSelectedCount() {
   const count = selectedCourseIds.size;
   coursesBadge.textContent = `${count} curso${count === 1 ? '' : 's'} selecionado${count === 1 ? '' : 's'}`;
+  // Curso é obrigatório: o botão de cadastro só habilita com ao menos um curso marcado.
+  if (regSubmitBtn) regSubmitBtn.disabled = count === 0;
 }
 
 if (courseFilterInput) {
@@ -1070,8 +1072,10 @@ if (deselectAllBtn) {
 
 if (regSchool) regSchool.addEventListener('change', loadCoursesForSelectedSchool);
 
+if (regSubmitBtn) regSubmitBtn.disabled = selectedCourseIds.size === 0;
+
 function setRegisterLoading(loading) {
-  regSubmitBtn.disabled = loading;
+  regSubmitBtn.disabled = loading || selectedCourseIds.size === 0;
   regBtnText.style.display = loading ? 'none' : 'inline';
   regBtnLoader.style.display = loading ? 'inline-block' : 'none';
 }
@@ -1328,7 +1332,12 @@ function updatePreviewMetrics(students) {
   if (kpiMissingCourses) kpiMissingCourses.textContent = String(missingCourseIds.size);
   if (confirmStudentCount) confirmStudentCount.textContent = String(students.length);
   if (confirmEnrollCount) confirmEnrollCount.textContent = String(totalEnrollments);
-  btnExecuteText.textContent = `Confirmar e Iniciar Matrículas em Fila (${totalEnrollments})`;
+  // Curso é obrigatório: bloqueia a execução enquanto houver aluno sem curso válido.
+  const withoutCourse = students.filter((s) => !s.validCourseIds || s.validCourseIds.length === 0).length;
+  if (btnExecuteEnrollments) btnExecuteEnrollments.disabled = withoutCourse > 0 || totalEnrollments === 0;
+  btnExecuteText.textContent = withoutCourse > 0
+    ? `Corrija ${withoutCourse} aluno(s) sem curso para continuar`
+    : `Confirmar e Iniciar Matrículas em Fila (${totalEnrollments})`;
 }
 
 async function ensureCsvSchoolsLoaded() {
