@@ -798,6 +798,7 @@ function showDashboard(data) {
   renderStudentCertificates(data.certificados || []);
   renderStudentTrails(data.trilhas || []);
   renderLearningProgress(data.cursos || []);
+  renderStatusRing(concluidos, Math.max(0, andamento));
 
   // Gamificacao
   dashGamifLevelName.textContent = data.gamificacao?.nivel || 'Nivel Inicial';
@@ -828,6 +829,33 @@ function showDashboard(data) {
   dashboard.style.display = 'flex';
   dashboard.style.flexDirection = 'column';
   dashboard.style.gap = '24px';
+}
+
+// Anel de status das inscrições: concluídas (grafite) e em andamento (coral), cores por token da DS.
+function renderStatusRing(done, ongoing) {
+  const el = document.getElementById('statusRing');
+  const legend = document.getElementById('statusLegend');
+  if (!el || !legend) return;
+  done = Math.max(0, Math.round(Number(done) || 0));
+  ongoing = Math.max(0, Math.round(Number(ongoing) || 0));
+  const total = done + ongoing;
+  if (total <= 0) {
+    el.innerHTML = '<span class="chart-empty">Sem inscrições para exibir.</span>';
+    legend.innerHTML = '';
+    return;
+  }
+  const C = 2 * Math.PI * 60;
+  const dDone = (C * done) / total;
+  const dOn = (C * ongoing) / total;
+  el.innerHTML = `<svg viewBox="0 0 160 160" role="img" aria-label="${done} concluídas e ${ongoing} em andamento">
+    <circle cx="80" cy="80" r="60" fill="none" stroke="var(--surface-hover)" stroke-width="20"/>
+    <circle cx="80" cy="80" r="60" fill="none" stroke="var(--text-default)" stroke-width="20" stroke-dasharray="${dDone} ${C - dDone}" transform="rotate(-90 80 80)"/>
+    <circle cx="80" cy="80" r="60" fill="none" stroke="var(--accent-highlight)" stroke-width="20" stroke-dasharray="${dOn} ${C - dOn}" stroke-dashoffset="${-dDone}" transform="rotate(-90 80 80)"/>
+    <text x="80" y="78" text-anchor="middle" class="status-ring__value">${total}</text>
+    <text x="80" y="98" text-anchor="middle" class="status-ring__label">inscrições</text>
+  </svg>`;
+  legend.innerHTML = `<li><span class="status-dot" style="background:var(--text-default)"></span>Concluídas <strong>${done}</strong></li>
+    <li><span class="status-dot" style="background:var(--accent-highlight)"></span>Em andamento <strong>${ongoing}</strong></li>`;
 }
 
 function renderLearningProgress(courses) {

@@ -2260,3 +2260,66 @@ body.report-open { overflow: hidden; }
 .flow-block .toggle-row { margin: 0; }
 .flow-layout .dropzone { margin-top: var(--space-8); }
 @media (max-width: 640px) { .flow-hint { margin-left: 0; } }
+
+/* ---------- CONSULTA DO ALUNO · padrão DS Consistem (respiro 40/32/24, tokens) ---------- */
+#searchTab .dashboard-360 { display: flex; flex-direction: column; gap: var(--space-32); }
+#searchTab .dashboard-360 > .profile-hero { order: 1; margin: 0; }
+#searchTab .dashboard-360 > .kpi-row { order: 2; }
+#searchTab .dashboard-360 > .dashboard-bottom { order: 3; }
+#searchTab .dashboard-360 > .dash-subtabs { order: 4; margin-bottom: 0; }
+#searchTab .dashboard-360 > .subtab-panel { order: 5; }
+
+#searchTab .profile-hero { padding: var(--space-32); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; column-gap: var(--space-32); }
+#searchTab .profile-name { font-size: var(--fs-24); font-weight: var(--fw-regular); line-height: var(--lh-normal); letter-spacing: var(--tracking-normal); }
+#searchTab .profile-email { font-size: var(--fs-14); color: var(--text-secondary); }
+#searchTab .profile-access-item > span { color: var(--text-secondary); font-size: var(--fs-11); }
+#searchTab .profile-access-item > strong { font-size: var(--fs-14); font-weight: var(--fw-medium); }
+
+/* Indicadores agrupados em um cartão, separados por linhas finas */
+#searchTab .kpi-row { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; margin: 0; padding: var(--space-24) 0; background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); }
+#searchTab .kpi-card { background: transparent; border: 0; border-left: var(--border-width-hairline) solid var(--border); border-radius: 0; box-shadow: none; padding: 0 var(--space-24); gap: var(--space-12); }
+#searchTab .kpi-card:first-child { border-left: 0; }
+#searchTab .kpi-icon, #searchTab .kpi-icon.blue, #searchTab .kpi-icon.gold, #searchTab .kpi-icon.green, #searchTab .kpi-icon.purple, #searchTab .kpi-icon.rose { width: 44px; height: 44px; border-radius: var(--r-full); background: var(--surface-alt); color: var(--text-default); }
+#searchTab .kpi-label { font-size: var(--fs-11); font-weight: var(--fw-semibold); color: var(--text-secondary); }
+#searchTab .kpi-value { font-size: var(--fs-24); font-weight: var(--fw-semibold); line-height: var(--lh-normal); }
+#searchTab .kpi-sub { font-size: var(--fs-12); color: var(--text-secondary); }
+
+/* Gráficos e registro: 2 colunas, 40px entre cartões; registro ocupa a linha inteira */
+#searchTab .dashboard-bottom { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-32) var(--space-40); }
+#searchTab .history-chart-card, #searchTab .registry-card { padding: var(--space-24); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; background: var(--surface-default); margin: 0; }
+#searchTab .registry-card { grid-column: 1 / -1; }
+#searchTab .chart-header h3, #searchTab .registry-header h3 { font-size: var(--fs-16); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-normal); }
+#searchTab .chart-sub { font-size: var(--fs-12); color: var(--text-secondary); }
+#searchTab .chart-bars .bar-fill.green { background: var(--text-default); }
+#searchTab .chart-bars .bar-fill.gold { background: var(--accent-warm); }
+
+/* Anel de status das inscrições */
+.status-ring { display: flex; justify-content: center; margin: var(--space-16) 0; }
+.status-ring svg { width: 180px; height: 180px; }
+.status-ring__value { font: var(--fw-semibold) var(--fs-24) var(--font); fill: var(--text-default); }
+.status-ring__label { font: var(--fw-regular) var(--fs-11) var(--font); fill: var(--text-secondary); }
+.status-legend { list-style: none; margin: 0; padding: 0; display: flex; justify-content: center; gap: var(--space-24); flex-wrap: wrap; font-size: var(--fs-14); color: var(--text-default); }
+.status-legend li { display: inline-flex; align-items: center; gap: var(--space-8); }
+.status-dot { width: 10px; height: 10px; border-radius: var(--r-full); display: inline-block; }
+
+/* Abas: indicador de 2px em coral (border-accent) e texto text-accent na aba ativa */
+#searchTab .dash-subtabs { border-bottom: var(--border-width-hairline) solid var(--border); }
+#searchTab .subtab-btn { color: var(--text-secondary); margin-bottom: -1px; border-bottom-width: var(--border-width-accent); }
+#searchTab .subtab-btn:hover { color: var(--text-accent); }
+#searchTab .subtab-btn.active { color: var(--text-accent); border-bottom-color: var(--accent-highlight); }
+#searchTab .subtab-count { background: var(--surface-alt); color: var(--text-secondary); }
+#searchTab .subtabs-summary { color: var(--text-secondary); }
+
+@media (max-width: 1100px) {
+  #searchTab .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-24); }
+  #searchTab .kpi-card, #searchTab .kpi-card:first-child { border-left: 0; }
+  #searchTab .dashboard-bottom { grid-template-columns: minmax(0, 1fr); }
+}
+/* Ajuste fino dos indicadores agrupados (cabem 5 colunas em telas de 1280 px) */
+#searchTab .kpi-card { padding: 0 var(--space-16); gap: var(--space-12); }
+#searchTab .kpi-icon, #searchTab .kpi-icon.blue, #searchTab .kpi-icon.gold, #searchTab .kpi-icon.green, #searchTab .kpi-icon.purple, #searchTab .kpi-icon.rose { width: 40px; height: 40px; }
+#searchTab .kpi-value { font-size: var(--fs-20); white-space: nowrap; }
+/* Ação repetida nos cartões de curso: contorno grafite (coral fica para a ação principal da tela) */
+#searchTab .btn-continue { background: var(--surface-default); color: var(--text-default); border: var(--border-width-control) solid var(--border-control); }
+#searchTab .btn-continue:hover { background: var(--surface-alt); border-color: var(--border-control-hover); }
+#searchTab .course-card { border: var(--border-width-hairline) solid var(--border); box-shadow: none; }

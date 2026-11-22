@@ -26,6 +26,11 @@ Fonte única da versão: `src/version.js` (`APP_VERSION`), exibida no rodapé da
 
 ## Changelog
 
+### v5.2 — 22/11/2026 — Consulta do aluno no padrão DS Consistem (RELEASE)
+- Indicadores agrupados em um único cartão; perfil, gráficos e registro com espaçamentos e bordas por token.
+- Novo anel "Status das inscrições" (concluídas × em andamento) com dados reais da consulta.
+- Gráficos antes das abas; abas com indicador coral de 2px; botão "Continuar curso" em contorno (coral só na ação principal).
+
 ### v5.1 — 22/11/2026 — Tela de login no padrão DS Consistem (RELEASE)
 - Eyebrow com ponto coral em DM Mono, título em peso Regular com entrelinha justa, subtítulo no estilo lead, espaçamentos, raios e sombra por token.
 - Fonte DM Mono carregada para o eyebrow.
