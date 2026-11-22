@@ -145,11 +145,13 @@ function stopAiLoading() {
 }
 
 function renderStepper() {
-  const labels = [['Importação', 'Planilha e análise'], ['Revisão', 'Dados do curso'], ['Documento', 'Prévia e PDF'], ['Publicação', 'XML WordPress']];
-  return `<div class="lesson-stepper" aria-label="Etapas do plano de aula">${labels.map(([label, title], index) => {
+  // Fases: atual = coral, concluída = verde, demais = cinza (padrão DS Consistem).
+  const labels = ['Importação', 'Revisão', 'Prévia e PDF', 'Publicação'];
+  return `<div class="phase-track lesson-phases" aria-label="Fases do plano de aula">${labels.map((label, index) => {
     const step = index + 1;
     const enabled = step === 1 || (step <= 3 && state.plan.unidades.length) || (step === 4 && state.plan.wordpressData.linkPlanoEnsinoPdf);
-    return `<button type="button" class="lesson-step ${state.step === step ? 'active' : ''} ${state.step > step ? 'completed' : ''}" data-action="step" data-step="${step}" ${enabled ? '' : 'disabled'}><span class="lesson-step-number">${state.step > step ? '✓' : step}</span><span><small>ETAPA 0${step} · ${label}</small><strong>${title}</strong></span></button>${step < 4 ? '<span class="lesson-step-line"></span>' : ''}`;
+    const stateClass = state.step > step ? 'is-done' : state.step === step ? 'is-current' : '';
+    return `<button type="button" class="phase lesson-phase ${stateClass}" data-action="step" data-step="${step}" ${enabled ? '' : 'disabled'} ${state.step === step ? 'aria-current="step"' : ''}><i></i>Fase ${step} · ${label}</button>`;
   }).join('')}</div>`;
 }
 

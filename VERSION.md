@@ -26,6 +26,10 @@ Fonte única da versão: `src/version.js` (`APP_VERSION`), exibida no rodapé da
 
 ## Changelog
 
+### v5.6 — 22/11/2026 — Plano de aula no padrão DS Consistem (RELEASE)
+- Indicador de fases (atual em coral, concluída em verde, demais em cinza) no lugar do stepper em cartão; "Avançar" continua desabilitado até a planilha ser analisada.
+- Cartões, campos, área de upload, rodapés e mensagens com tokens da DS (bordas finas, raios, foco, espaçamentos 40/32/24).
+
 ### v5.5 — 22/11/2026 — Avaliações no padrão DS Consistem (RELEASE)
 - Filtros em um cartão; indicadores agrupados com linhas finas; gráficos em cartões de borda fina, 40px entre colunas e 32px entre linhas.
 - Barra de busca da lista de alunos sem estilos inline; campo de pessoas sem o botão "Limpar" visível quando vazio.

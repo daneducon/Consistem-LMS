@@ -158,3 +158,41 @@
   .lesson-preview-stage { padding: 16px; justify-content: flex-start; }
   .lesson-xml-prompt { grid-template-columns: 1fr; }
 }
+
+/* ---------- PLANO DE AULA · padrão DS Consistem (fases, blocos e tokens) ---------- */
+.lesson-phases { margin: 0 0 var(--space-32); }
+button.lesson-phase { background: none; border: 0; padding: 0; font-family: var(--font); cursor: pointer; }
+button.lesson-phase:disabled { cursor: not-allowed; opacity: 1; }
+button.lesson-phase:focus-visible { outline: var(--border-width-focus) solid var(--focus-ring); outline-offset: 4px; border-radius: var(--r-4); }
+.lesson-toolbar { color: var(--text-secondary); margin-bottom: var(--space-16); }
+.lesson-draft-dot { background: var(--feedback-positive); }
+.lesson-grid { gap: var(--space-40); }
+.lesson-flow-stack { gap: var(--space-32); }
+.lesson-card { padding: var(--space-24); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; background: var(--surface-default); }
+.lesson-section-heading { margin-bottom: var(--space-24); }
+.lesson-section-heading h2, .lesson-preview-toolbar h2, .lesson-url-form h2 { margin: var(--space-4) 0 var(--space-8); font-size: var(--fs-24); font-weight: var(--fw-regular); line-height: var(--lh-normal); letter-spacing: var(--tracking-normal); }
+.lesson-section-heading p, .lesson-preview-toolbar p, .lesson-url-form p { color: var(--text-secondary); font-size: var(--fs-14); line-height: var(--lh-normal); }
+.lesson-kicker { color: var(--text-secondary); font-size: var(--fs-10); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-wide); }
+.lesson-dropzone { border: var(--border-width-control) dashed var(--border-control); border-radius: var(--r-lg); background: var(--surface-alt); }
+.lesson-dropzone:hover { border-color: var(--accent-highlight); background: var(--accent-soft); }
+.lesson-dropzone.has-file { border-color: var(--border-control); background: var(--surface-alt); }
+.lesson-drop-icon { background: var(--surface-default); color: var(--text-default); border: var(--border-width-hairline) solid var(--border); }
+.lesson-analysis-metrics > div { background: var(--surface-alt); }
+.lesson-analysis-metrics span, .lesson-sheet-list small { color: var(--text-secondary); }
+.lesson-sheet-list > div { border-color: var(--border); border-radius: var(--r-8); }
+.lesson-empty { color: var(--text-secondary); }
+.lesson-notice.warning { color: var(--feedback-warning); background: var(--surface-alt); }
+.lesson-footer-actions { margin-top: var(--space-32); padding-top: var(--space-24); border-top: var(--border-width-hairline) solid var(--border); }
+.lesson-feedback { border-radius: var(--r-8); }
+.lesson-feedback.success { color: var(--feedback-positive); background: var(--surface-alt); border-color: var(--border); }
+.lesson-feedback.error { color: var(--feedback-negative); background: var(--feedback-negative-soft); border-color: var(--feedback-negative-soft); }
+.lesson-feedback.info { color: var(--text-default); background: var(--surface-alt); border-color: var(--border); }
+.lesson-status-chip, .lesson-status-chip.gold { color: var(--text-secondary); background: var(--surface-alt); }
+.lesson-form-grid { gap: var(--space-20); }
+.lesson-field > span, .lesson-label-row > span { color: var(--text-secondary); font-size: var(--fs-12); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-normal); text-transform: none; }
+.lesson-field input, .lesson-field textarea, .lesson-program input { min-height: var(--control-md); border-color: var(--border-control); border-radius: var(--r-8); font-size: var(--fs-14); }
+.lesson-field input:focus, .lesson-field textarea:focus, .lesson-program input:focus { border-color: var(--focus-ring); box-shadow: 0 0 0 var(--border-width-focus) var(--surface-default), 0 0 0 4px var(--focus-ring); }
+.lesson-field input[readonly] { color: var(--text-secondary); background: var(--surface-alt); }
+.lesson-field small { color: var(--text-secondary); }
+.lesson-ai-button { background: var(--surface-alt); color: var(--text-default); border-radius: var(--r-8); }
+@media (max-width: 1100px) { .lesson-upload-grid { grid-template-columns: minmax(0, 1fr); gap: var(--space-32); } }
