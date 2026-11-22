@@ -1122,12 +1122,11 @@ if (registerForm) {
     if (schoolIndex === '') { showRegisterFeedback('error', 'Por favor, selecione uma escola.'); return; }
 
     const courseIds = Array.from(selectedCourseIds);
+    if (courseIds.length === 0) { showRegisterFeedback('error', 'Selecione ao menos um curso para matricular o aluno.'); return; }
     const selectedCourseTitles = currentCourses.filter((c) => selectedCourseIds.has(c.id)).map((c) => c.nome);
 
     setRegisterLoading(true);
-    regBtnText.textContent = courseIds.length > 0
-      ? `Matriculando em ${courseIds.length} curso(s)...`
-      : 'Cadastrando aluno...';
+    regBtnText.textContent = `Matriculando em ${courseIds.length} curso(s)...`;
 
     try {
       const res = await fetch('/api/student', {
@@ -1654,7 +1653,7 @@ function renderPreviewTable(students) {
         ? `<span class="course-chip valid">${escapeHtml(c.nome)} <small>#${Number(c.id)}</small></span>`
         : `<span class="course-chip invalid">#${c.id} (Nao encontrado)</span>`
       ).join('')
-      : '<span style="color:var(--graphite-subtle);font-style:italic;font-size:12px;">Nenhum curso (lead)</span>';
+      : '<span class="course-chip invalid">Curso obrigatório: informe ao menos um</span>';
 
     const passBadge = s.senha
       ? `<span class="credential-badge custom">Senha do CSV (Criptografada)</span>`

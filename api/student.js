@@ -261,7 +261,7 @@ export async function fetchCourseAccessStatus(apiKey, studentId, courseId) {
  * Tenta cadastrar aluno na escola com melhor permissão disponível.
  * Fluxo:
  *   1. Se tem cursos selecionados → matricula via /students/enrollment (com id_curso + id_turma)
- *   2. Se não tem cursos → cadastra como lead via /leads/enrollment
+ *   2. Se não tem cursos → rejeita (curso obrigatório; cadastro como lead descontinuado)
  *   3. Se a Key não tem permissão de escrita → retorna erro claro
  */
 export default async function handler(req, res) {
@@ -665,6 +665,11 @@ export default async function handler(req, res) {
         return { ok: false, error: 'A lista de trilhas/pacotes contém IDs inválidos.', student: { nome: cleanNome } };
       }
       const uniquePackageIds = [...new Set(normalizedPackageIds)];
+
+      // Regra: toda matrícula exige ao menos um curso (cadastro como lead foi descontinuado).
+      if (uniqueCourseIds.length === 0) {
+        return { ok: false, error: 'Selecione ao menos um curso para matricular o aluno.', student: { nome: cleanNome } };
+      }
       if (uniquePackageIds.length > 20) {
         return { ok: false, error: 'O aluno excede o limite de 20 trilhas/pacotes.', student: { nome: cleanNome } };
       }
@@ -998,52 +1003,6 @@ export default async function handler(req, res) {
         };
       }
 
-      // === CADASTRO COMO LEAD (sem cursos) ===
-      const leadCamposExtras = [];
-      if (effEmpresa) leadCamposExtras.push({ campo: 'Empresa', valor: effEmpresa });
-      if (effOrigem) leadCamposExtras.push({ campo: 'Origem', valor: effOrigem });
-      if (effProjetoServ) leadCamposExtras.push({ campo: 'Projeto Serv', valor: effProjetoServ });
-      if (effIdEmpresa) leadCamposExtras.push({ campo: 'ID Empresa', valor: effIdEmpresa });
-      const leadPayload = {
-        nome: cleanNome,
-        email: cleanEmail,
-        senha: cleanPassword,
-        id_pais: paisNum,
-        enviar_email_notificacao: shouldNotifyEmail ? 1 : 0,
-      };
-      if (cleanCpf) leadPayload.cpf = cleanCpf;
-      if (cleanDdd) leadPayload.ddd = cleanDdd;
-      if (cleanTel) leadPayload.telefone = cleanTel;
-      if (cleanCep) leadPayload.cep = cleanCep;
-      if (cleanNum) leadPayload.numero = cleanNum;
-      if (endereco) leadPayload.endereco = String(endereco).trim();
-      if (cidade) leadPayload.cidade = String(cidade).trim();
-      if (estado) leadPayload.estado = String(estado).trim().toUpperCase();
-
-      let leadResponse;
-      if (leadCamposExtras.length > 0) {
-        // Usa endpoint com extra fields para Universidade Consistem
-        leadResponse = await fetchWithTimeout(`${HOTSCOOL_API_URL}/leads/enrollment/extrafields`, {
-          method: 'POST',
-          headers: { 'x-access-token': targetSchool.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ ...leadPayload, campos_extras: leadCamposExtras }),
-        });
-      } else {
-        leadResponse = await fetchWithTimeout(`${HOTSCOOL_API_URL}/leads/enrollment`, {
-          method: 'POST',
-          headers: { 'x-access-token': targetSchool.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(leadPayload),
-        });
-      }
-
-      return {
-        ok: leadResponse.ok,
-        nome: cleanNome,
-        email: cleanEmail,
-        totalMatriculas: 0,
-        isLead: true,
-        error: !leadResponse.ok ? 'A Hotscool rejeitou o cadastro do aluno.' : null,
-      };
     }
 
     try {
