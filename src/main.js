@@ -2467,18 +2467,22 @@ function renderLicenses() {
 
   const licSchoolsRow = document.getElementById('licSchoolsRow');
   if (licSchoolsRow) {
-    licSchoolsRow.innerHTML = licData.schools.map((s) => `
-      <div class="kpi-card">
-        <div class="kpi-icon purple">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+    const maxUsers = Math.max(1, ...licData.schools.map((s) => Number(s.usuariosAtivos) || 0));
+    licSchoolsRow.innerHTML = licData.schools.map((s) => {
+      const users = Number(s.usuariosAtivos) || 0;
+      const pct = Math.max(2, Math.round((users / maxUsers) * 100));
+      return `
+      <div class="lic-school">
+        <div class="lic-school__head">
+          <span class="lic-school__name">${escapeHtml(s.name)}</span>
+          <strong class="lic-school__users">${users} ${users === 1 ? 'usuário' : 'usuários'}</strong>
         </div>
-        <div class="kpi-data">
-          <span class="kpi-label">${escapeHtml(s.name)}</span>
-          <span class="kpi-value">${s.usuariosAtivos ?? 0} usuários</span>
-          <span class="kpi-sub">${s.ativas} matrículas ativas • ${s.bloqueadas} bloqueadas • ${s.emRisco} em risco (${s.usuariosTrilha ?? 0} só trilha) • ${s.semMatricula ?? 0} não matriculados</span>
-        </div>
-      </div>`).join('');
+        <span class="lic-school__meta">${Number(s.ativas) || 0} matrículas ativas • ${Number(s.bloqueadas) || 0} bloqueadas • ${Number(s.emRisco) || 0} em risco (${Number(s.usuariosTrilha) || 0} só trilha) • ${Number(s.semMatricula) || 0} não matriculados</span>
+        <div class="lic-school__bar"><span style="width:${pct}%"></span></div>
+      </div>`;
+    }).join('');
   }
+  renderLicDue(licData.items || []);
 
   if (licSchoolSelect && licSchoolSelect.options.length === 0) {
     licSchoolSelect.innerHTML = '<option value="all">Todas as escolas</option>'
@@ -2556,18 +2560,48 @@ function renderLicenses() {
   updateLicSelectionUi(isNone ? [] : pageRows);
 }
 
-const LIC_SKELETON_IDS = ['licKpiTeto', 'licKpiRisco', 'licKpiBloqueadas', 'licKpiSemMat'];
+// Próximos vencimentos: matrículas ativas que vencem em até 60 dias, da mais próxima para a mais distante.
+function renderLicDue(items) {
+  const list = document.getElementById('licDueList');
+  if (!list) return;
+  const day = 24 * 60 * 60 * 1000;
+  const upcoming = items
+    .filter((i) => typeof i.diasRestantes === 'number' && i.diasRestantes >= 0 && i.diasRestantes <= 60 && i.acessoAtivo !== false)
+    .sort((a, b) => a.diasRestantes - b.diasRestantes)
+    .slice(0, 5);
+  if (!upcoming.length) {
+    list.innerHTML = '<li class="lic-due__empty">Nenhum vencimento nos próximos 60 dias.</li>';
+    return;
+  }
+  list.innerHTML = upcoming.map((i) => {
+    const d = Number(i.diasRestantes);
+    const when = new Date(Date.now() + d * day).toLocaleDateString('pt-BR');
+    const soon = d <= 30;
+    return `<li class="lic-due__item${soon ? ' is-soon' : ''}">
+      <span class="lic-due__dot"></span>
+      <div class="lic-due__body">
+        <strong>${d === 0 ? 'vence hoje' : `vence em ${d} ${d === 1 ? 'dia' : 'dias'}`}</strong>
+        <small>${escapeHtml(i.nome)} · ${escapeHtml(i.titulo)}</small>
+      </div>
+      <span class="lic-due__date">${escapeHtml(when)}</span>
+    </li>`;
+  }).join('');
+}
+
+const LIC_SKELETON_IDS =['licKpiTeto', 'licKpiRisco', 'licKpiBloqueadas', 'licKpiSemMat'];
 
 function showLicSkeletons(statusText) {
   for (const id of LIC_SKELETON_IDS) document.getElementById(id)?.classList.add('skel');
   if (licSchoolsRow) {
     licSchoolsRow.innerHTML = [1, 2, 3].map(() => `
-      <div class="kpi-card"><div class="kpi-data">
-        <span class="kpi-label skel">Escola</span>
-        <span class="kpi-value skel">000 usuários</span>
-        <span class="kpi-sub skel">carregando…</span>
-      </div></div>`).join('');
+      <div class="lic-school">
+        <div class="lic-school__head"><span class="lic-school__name skel">Escola carregando</span></div>
+        <span class="lic-school__meta skel">carregando dados da escola…</span>
+        <div class="lic-school__bar"><span class="skel" style="width:60%"></span></div>
+      </div>`).join('');
   }
+  const dueList = document.getElementById('licDueList');
+  if (dueList) dueList.innerHTML = '<li class="lic-due__empty skel">carregando vencimentos…</li>';
   if (licTableBody) {
     licTableBody.innerHTML = Array.from({ length: 8 }).map(() => `
       <tr class="skel-row">

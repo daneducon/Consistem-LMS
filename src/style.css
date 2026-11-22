@@ -2323,3 +2323,46 @@ body.report-open { overflow: hidden; }
 #searchTab .btn-continue { background: var(--surface-default); color: var(--text-default); border: var(--border-width-control) solid var(--border-control); }
 #searchTab .btn-continue:hover { background: var(--surface-alt); border-color: var(--border-control-hover); }
 #searchTab .course-card { border: var(--border-width-hairline) solid var(--border); box-shadow: none; }
+/* ---------- LICENÇAS E RISCOS · padrão DS Consistem ---------- */
+#licensesTab .lic-kpi-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0 0 var(--space-32); padding: var(--space-24) 0; background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); }
+#licensesTab .lic-kpi-row .kpi-card { background: transparent; border: 0; border-left: var(--border-width-hairline) solid var(--border); border-radius: 0; box-shadow: none; padding: 0 var(--space-24); gap: var(--space-12); }
+#licensesTab .lic-kpi-row .kpi-card:first-child { border-left: 0; }
+#licensesTab .kpi-icon, #licensesTab .kpi-icon.blue, #licensesTab .kpi-icon.gold, #licensesTab .kpi-icon.green, #licensesTab .kpi-icon.purple, #licensesTab .kpi-icon.rose { width: 44px; height: 44px; border-radius: var(--r-full); background: var(--surface-alt); color: var(--text-default); }
+#licensesTab .kpi-icon.gold { color: var(--accent-highlight); }
+#licensesTab .kpi-label { font-size: var(--fs-11); font-weight: var(--fw-semibold); color: var(--text-secondary); }
+#licensesTab .kpi-value { font-size: var(--fs-24); font-weight: var(--fw-semibold); line-height: var(--lh-normal); white-space: nowrap; }
+#licensesTab .kpi-sub { font-size: var(--fs-12); color: var(--text-secondary); }
+
+.lic-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-40); margin-bottom: var(--space-32); align-items: stretch; }
+.lic-split .flow-block { margin: 0; }
+#licSchoolsRow { display: flex; flex-direction: column; gap: var(--space-24); margin: 0; grid-template-columns: none; }
+.lic-school { display: flex; flex-direction: column; gap: var(--space-4); }
+.lic-school__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-16); }
+.lic-school__name { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--text-default); }
+.lic-school__users { font-size: var(--fs-14); font-weight: var(--fw-semibold); color: var(--text-default); white-space: nowrap; }
+.lic-school__meta { font-size: var(--fs-12); color: var(--text-secondary); line-height: var(--lh-normal); }
+.lic-school__bar { height: 6px; border-radius: var(--r-full); background: var(--surface-hover); overflow: hidden; margin-top: var(--space-8); }
+.lic-school__bar > span { display: block; height: 100%; border-radius: var(--r-full); background: var(--text-default); }
+
+.lic-due { list-style: none; margin: 0; padding: 0; position: relative; display: flex; flex-direction: column; gap: var(--space-20); }
+.lic-due::before { content: ''; position: absolute; left: 5px; top: 8px; bottom: 8px; width: 2px; background: var(--border); }
+.lic-due__item { position: relative; display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: var(--space-12); align-items: start; }
+.lic-due__dot { width: 12px; height: 12px; border-radius: var(--r-full); background: var(--text-secondary); margin-top: 3px; position: relative; z-index: 1; }
+.lic-due__item.is-soon .lic-due__dot { background: var(--accent-highlight); }
+.lic-due__body strong { display: block; font-size: var(--fs-14); font-weight: var(--fw-semibold); color: var(--text-default); }
+.lic-due__item.is-soon .lic-due__body strong { color: var(--text-accent); }
+.lic-due__body small { display: block; margin-top: var(--space-2); font-size: var(--fs-12); color: var(--text-secondary); overflow-wrap: anywhere; }
+.lic-due__date { font-size: var(--fs-12); font-weight: var(--fw-medium); color: var(--text-default); white-space: nowrap; }
+.lic-due__empty { font-size: var(--fs-14); color: var(--text-secondary); }
+
+#licensesTab .preview-table-card { padding: var(--space-24); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; background: var(--surface-default); }
+#licensesTab .preview-toolbar { margin: var(--space-24) 0 var(--space-16); gap: var(--space-16); flex-wrap: wrap; }
+#licensesTab .preview-table-header { gap: var(--space-24); }
+
+@media (max-width: 1100px) {
+  #licensesTab .lic-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-24); }
+  #licensesTab .lic-kpi-row .kpi-card, #licensesTab .lic-kpi-row .kpi-card:first-child { border-left: 0; }
+  .lic-split { grid-template-columns: minmax(0, 1fr); gap: var(--space-32); }
+}
+#licensesTab .preview-table-header { flex-wrap: wrap; }
+#licensesTab .preview-table-header button { white-space: nowrap; }

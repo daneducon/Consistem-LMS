@@ -26,6 +26,10 @@ Fonte única da versão: `src/version.js` (`APP_VERSION`), exibida no rodapé da
 
 ## Changelog
 
+### v5.3 — 22/11/2026 — Licenças e riscos no padrão DS Consistem (RELEASE)
+- Indicadores agrupados em um cartão; "Usuários por escola" com barras de proporção e "Próximos vencimentos" (linha do tempo das matrículas ativas que vencem em até 60 dias) lado a lado.
+- Tabela em cartão próprio com ações sem quebra de texto; cores e espaçamentos por token.
+
 ### v5.2 — 22/11/2026 — Consulta do aluno no padrão DS Consistem (RELEASE)
 - Indicadores agrupados em um único cartão; perfil, gráficos e registro com espaçamentos e bordas por token.
 - Novo anel "Status das inscrições" (concluídas × em andamento) com dados reais da consulta.
