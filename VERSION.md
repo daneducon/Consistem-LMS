@@ -27,6 +27,10 @@ Fonte única da versão: `src/version.js` (`APP_VERSION`), exibida no rodapé da
 
 ## Changelog
 
+### v5.0.7 — 22/11/2026 — Varredura completa na DS Consistem (AJUSTE)
+- Todas as cores literais do CSS passam a usar tokens da DS; botões (40/48 px, raio 8), chips, pílulas de status e campos (48 px) seguem as especificações da biblioteca.
+- Ícones com traço de 1,75 px; ícone ativo da sidebar em coral; estilos de layout escritos no HTML viraram classes.
+
 ### v5.0.6 — 22/11/2026 — Layout no padrão DS Consistem (AJUSTE)
 - Login, Consulta do aluno, Licenças e riscos, Avaliações, Plano de aula e cabeçalho dos cursos com tokens, espaçamentos e componentes da DS (indicadores agrupados, anel de status, linha do tempo de vencimentos, fases coral/verde/cinza).
 - Unifica as versões 5.1 a 5.6 anteriores, que eram só de layout.

@@ -501,7 +501,7 @@ function renderStudentCourses(courses) {
     const hasCourseRef = Number.isSafeInteger(Number(c.id_curso)) && c.schoolId !== undefined && c.schoolId !== null;
     const reactivateBtn = hasCourseRef
       ? `<button type="button" class="btn-reactivate ${isBlocked ? 'blocked' : 'ghost'}" data-reactivate-course="${escapeHtml(String(c.id_curso))}" data-reactivate-school="${escapeHtml(String(c.schoolId))}" data-reactivate-title="${title}" title="Libera o acesso via API sem precisar abrir o painel da Hotscool">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10"/><path d="M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10"/><path d="M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>
           ${isBlocked ? 'Reativar acesso' : 'Liberar acesso'}
         </button>`
       : '';
@@ -509,12 +509,12 @@ function renderStudentCourses(courses) {
     let actions = '';
     if (isDone && certificateUrl) {
       actions = `<a href="${certificateUrl}" target="_blank" rel="noopener noreferrer" class="btn-cert">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
         Ver Certificado Autenticado
       </a>`;
     } else if (!isDone) {
       actions = `<a href="${accessUrl}" target="_blank" rel="noopener noreferrer" class="btn-continue">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Continuar Curso
       </a>`;
     }
@@ -622,7 +622,7 @@ function renderStudentCertificates(certs) {
         <span class="cert-date">Emitido em: ${escapeHtml(c.dataEmissao)}</span>
       </div>
       <a href="${safeHttpsUrl(c.url) || '#'}" target="_blank" rel="noopener noreferrer" class="cert-link">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Abrir PDF
       </a>
     </div>`).join('');
@@ -1039,7 +1039,7 @@ function renderCoursesList(courses) {
           </div>
         </div>
         ${duration ? `<span class="course-check-duration">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           ${duration}
         </span>` : ''}
       </label>`;
@@ -1789,7 +1789,7 @@ function renderPreviewTable(students) {
         <td><span class="status-ready">Pronto p/ envio</span></td>
         <td>
           <button type="button" class="btn-remove-row" data-remove-idx="${idx}" title="Remover">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           </button>
         </td>
       </tr>`;
@@ -1848,7 +1848,7 @@ if (btnExecuteEnrollments) {
       return `
         <div class="log-row" id="execRow-${idx}">
           <div class="log-icon pending">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/></svg>
           </div>
           <div class="log-info">
             <div class="log-name">${escapeHtml(s.nome)}</div>
@@ -1876,7 +1876,7 @@ if (btnExecuteEnrollments) {
       }
       if (rowEl) {
         const icon = rowEl.querySelector('.log-icon');
-        if (icon) { icon.className = 'log-icon running'; icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'; }
+        if (icon) { icon.className = 'log-icon running'; icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'; }
       }
 
       // Campos Universidade Consistem: prioridade para valor da linha CSV, fallback para campo do lote
@@ -1941,7 +1941,7 @@ if (btnExecuteEnrollments) {
         const textReport = executionReport.map((r) => `${r.aluno} (${r.email}): ${r.status} ${r.matriculas ? `- ${r.matriculas} cursos` : `- Erro: ${r.erro}`}`).join('\n');
         navigator.clipboard.writeText(textReport).then(() => {
           btnCopyLog.textContent = 'Copiado!';
-          setTimeout(() => { btnCopyLog.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Baixar Relatório de Execução (.CSV)'; }, 2000);
+          setTimeout(() => { btnCopyLog.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Baixar Relatório de Execução (.CSV)'; }, 2000);
         });
       };
     }
