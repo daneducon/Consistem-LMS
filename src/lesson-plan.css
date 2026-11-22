@@ -196,3 +196,8 @@ button.lesson-phase:focus-visible { outline: var(--border-width-focus) solid var
 .lesson-field small { color: var(--text-secondary); }
 .lesson-ai-button { background: var(--surface-alt); color: var(--text-default); border-radius: var(--r-8); }
 @media (max-width: 1100px) { .lesson-upload-grid { grid-template-columns: minmax(0, 1fr); gap: var(--space-32); } }
+
+/* Importação do Plano usa o mesmo molde do lote (.dropzone, .flow-*) */
+label.dropzone { display: block; cursor: pointer; }
+.dropzone.has-file { border-color: var(--border-control); background: var(--surface-alt); }
+.lesson-analysis-metrics { margin-top: var(--space-8); }

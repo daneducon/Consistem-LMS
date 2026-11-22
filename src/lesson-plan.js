@@ -157,26 +157,55 @@ function renderStepper() {
 
 function renderUpload() {
   const analysis = state.analysis;
-  return `<div class="lesson-grid lesson-upload-grid">
-    <article class="lesson-card lesson-upload-card">
-      <div class="lesson-section-heading"><span class="lesson-kicker">ORIGEM DOS DADOS</span><h2>Importe a matriz do treinamento</h2><p>Use a planilha MATRIZ e, quando disponível, a aba GERCON para preencher automaticamente o plano.</p></div>
-      <label class="lesson-dropzone ${analysis ? 'has-file' : ''}" id="lessonDropzone">
-        <input type="file" id="lessonFileInput" accept=".xlsx,.xls,.csv,.txt" ${busy ? 'disabled' : ''}>
-        <span class="lesson-drop-icon">${busy ? '…' : '↑'}</span>
-        <strong>${busy ? 'Analisando a planilha...' : analysis ? escapeHtml(analysis.fileName) : 'Arraste ou selecione a planilha'}</strong>
-        <span>${analysis ? `${analysis.totalUnits} aulas identificadas na aba ${escapeHtml(analysis.matrixName)}` : 'XLSX, XLS ou CSV · limite de 10 MB'}</span>
-      </label>
-      <div class="lesson-inline-actions"><button type="button" class="btn-ghost" data-action="template">Baixar modelo XLSX</button><button type="button" class="btn-ghost" data-action="sample">Usar dados de exemplo</button></div>
-    </article>
-    <aside class="lesson-card lesson-analysis-card">
-      <div class="lesson-section-heading"><span class="lesson-kicker">LEITURA ESTRUTURADA</span><h2>Diagnóstico da importação</h2><p>Aulas, metadados e programas permanecem editáveis na próxima etapa.</p></div>
-      ${analysis ? `<div class="lesson-analysis-metrics"><div><strong>${analysis.totalUnits}</strong><span>Aulas extraídas</span></div><div><strong>${analysis.sheets.length}</strong><span>Abas analisadas</span></div><div><strong>${analysis.gerconName ? 'Sim' : 'Não'}</strong><span>Gercon encontrada</span></div></div>
+  // Mesmo molde da Matrícula em lote: blocos numerados + painel "Próximo passo".
+  const icoUpload = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+  const icoDown = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+  const icoCopy = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  const hasUnits = state.plan.unidades.length > 0;
+  const diagnostic = analysis
+    ? `<div class="lesson-analysis-metrics"><div><strong>${analysis.totalUnits}</strong><span>Aulas extraídas</span></div><div><strong>${analysis.sheets.length}</strong><span>Abas analisadas</span></div><div><strong>${analysis.gerconName ? 'Sim' : 'Não'}</strong><span>Gercon encontrada</span></div></div>
       <div class="lesson-sheet-list">${analysis.sheets.map((sheet) => `<div><span>${escapeHtml(sheet.name)}</span><small>${sheet.type} · ${sheet.rowCount} linhas · ${sheet.colCount} colunas</small></div>`).join('')}</div>
-      ${analysis.warnings.map((warning) => `<p class="lesson-notice warning">${escapeHtml(warning)}</p>`).join('')}` : '<div class="lesson-empty"><strong>Nenhuma planilha analisada</strong><span>Os detalhes da estrutura aparecerão aqui.</span></div>'}
+      ${analysis.warnings.map((warning) => `<p class="lesson-notice warning">${escapeHtml(warning)}</p>`).join('')}`
+    : '<div class="lesson-empty"><strong>Nenhuma planilha analisada</strong><span>Os detalhes da estrutura aparecerão aqui.</span></div>';
+  return `<div class="flow-layout">
+    <div class="flow-main">
+      <div class="card flow-block">
+        <div class="flow-block-header"><span class="flow-step">1</span><h3 class="card-title">Planilha</h3><span class="flow-tag">Obrigatório</span></div>
+        <p class="flow-block-desc">Use a planilha MATRIZ e, quando disponível, a aba GERCON para preencher o plano automaticamente.</p>
+        <label class="dropzone ${analysis ? 'has-file' : ''}" id="lessonDropzone">
+          <input type="file" id="lessonFileInput" class="file-input-hidden" accept=".xlsx,.xls,.csv,.txt" ${busy ? 'disabled' : ''}>
+          <div class="dropzone-inner">
+            <div class="dropzone-icon-box">${icoUpload}</div>
+            <p class="dropzone-title">${busy ? 'Analisando a planilha...' : analysis ? escapeHtml(analysis.fileName) : 'Arraste a planilha aqui ou clique para selecionar'}</p>
+            <p class="dropzone-sub">${analysis ? `${analysis.totalUnits} aulas identificadas na aba ${escapeHtml(analysis.matrixName)}` : 'XLSX, XLS ou CSV • até 10 MB'}</p>
+          </div>
+        </label>
+        <div class="flow-inline-actions">
+          <button type="button" class="btn-ghost-sm" data-action="template">${icoDown}Baixar modelo XLSX</button>
+          <button type="button" class="btn-ghost-sm" data-action="sample">${icoCopy}Usar dados de exemplo</button>
+          <span class="flow-hint">Colunas: aula, módulo, carga horária e programa</span>
+        </div>
+      </div>
+      <div class="card flow-block">
+        <div class="flow-block-header"><span class="flow-step">2</span><h3 class="card-title">Diagnóstico da importação</h3><span class="flow-tag">Automático</span></div>
+        <p class="flow-block-desc">Aulas, metadados e programas permanecem editáveis na próxima etapa.</p>
+        ${diagnostic}
+      </div>
+    </div>
+    <aside class="card flow-rail">
+      <div class="flow-block-header"><h3 class="card-title">Próximo passo</h3></div>
+      <p class="flow-block-desc">Importar não publica nada. Você revisa tudo na próxima fase.</p>
+      <ul class="flow-checklist">
+        <li class="${analysis ? 'is-done' : ''}"><span class="check-dot"></span><div><strong>Planilha enviada</strong><small>Envie a matriz ou use os dados de exemplo</small></div></li>
+        <li class="${hasUnits ? 'is-done' : ''}"><span class="check-dot"></span><div><strong>Aulas identificadas</strong><small>Ao menos uma aula para avançar</small></div></li>
+      </ul>
+      <div class="flow-rail-actions">
+        <button type="button" class="btn-coral" data-action="next" ${hasUnits ? '' : 'disabled'}>Avançar para revisão</button>
+        <button type="button" class="btn-ghost" data-action="reset">Recomeçar</button>
+      </div>
     </aside>
   </div>
-  ${feedbackHtml()}
-  <div class="lesson-footer-actions"><button type="button" class="btn-ghost" data-action="reset">Recomeçar</button><button type="button" class="btn-coral" data-action="next" ${state.plan.unidades.length ? '' : 'disabled'}>Avançar para preenchimento →</button></div>`;
+  ${feedbackHtml()}`;
 }
 
 function field(label, name, value, options = {}) {

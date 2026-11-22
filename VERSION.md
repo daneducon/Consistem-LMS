@@ -27,6 +27,9 @@ Fonte única da versão: `src/version.js` (`APP_VERSION`), exibida no rodapé da
 
 ## Changelog
 
+### v5.0.8 — 22/11/2026 — Importação do Plano igual à do Lote (AJUSTE)
+- Fase 1 do Plano de aula usa o mesmo molde da matrícula em lote: blocos numerados com tag, área de envio, botões com ícone e painel "Próximo passo" com checklist.
+
 ### v5.0.7 — 22/11/2026 — Varredura completa na DS Consistem (AJUSTE)
 - Todas as cores literais do CSS passam a usar tokens da DS; botões (40/48 px, raio 8), chips, pílulas de status e campos (48 px) seguem as especificações da biblioteca.
 - Ícones com traço de 1,75 px; ícone ativo da sidebar em coral; estilos de layout escritos no HTML viraram classes.
