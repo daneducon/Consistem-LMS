@@ -26,6 +26,10 @@ Fonte única da versão: `src/version.js` (`APP_VERSION`), exibida no rodapé da
 
 ## Changelog
 
+### v5.5 — 22/11/2026 — Avaliações no padrão DS Consistem (RELEASE)
+- Filtros em um cartão; indicadores agrupados com linhas finas; gráficos em cartões de borda fina, 40px entre colunas e 32px entre linhas.
+- Barra de busca da lista de alunos sem estilos inline; campo de pessoas sem o botão "Limpar" visível quando vazio.
+
 ### v5.4 — 22/11/2026 — Cabeçalho dos cursos na Consulta do aluno (RELEASE)
 - Abas numa linha, sem barra de rolagem visível; resumo e ordenação em linha própria abaixo das abas.
 

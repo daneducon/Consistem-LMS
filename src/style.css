@@ -2372,3 +2372,39 @@ body.report-open { overflow: hidden; }
 #searchTab .subtabs-left::-webkit-scrollbar { display: none; }
 #searchTab .subtabs-right { width: 100%; justify-content: space-between; padding-top: var(--space-16); }
 #searchTab .subtabs-right .btn-ghost-sm { border: var(--border-width-control) solid var(--border); background: var(--surface-default); color: var(--text-default); border-radius: var(--r-8); min-height: var(--control-sm); padding: 0 var(--space-16); }
+/* ---------- AVALIAÇÕES · padrão DS Consistem (respiro 40/32/24, tokens) ---------- */
+#avaliacoesTab .avl-filter { padding: var(--space-24); margin-bottom: var(--space-32); background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); gap: var(--space-24); align-items: flex-end; }
+#avaliacoesTab .avl-filter__field span { font-size: var(--fs-12); font-weight: var(--fw-semibold); color: var(--text-secondary); letter-spacing: var(--tracking-normal); }
+#avaliacoesTab .avl-filter__field select, #avaliacoesTab .avl-chips, #avaliacoesTab .avl-multi__summary { border-color: var(--border-control); border-radius: var(--r-8); min-height: var(--control-md); }
+#avaliacoesTab .avl-chips:focus-within, #avaliacoesTab .avl-filter__field select:focus { border-color: var(--focus-ring); box-shadow: 0 0 0 var(--border-width-focus) var(--surface-default), 0 0 0 4px var(--focus-ring); }
+#avaliacoesTab .avl-filter__check { min-height: var(--control-md); font-size: var(--fs-14); }
+
+#avaliacoesTab .avl-dashboard { gap: var(--space-32); margin-bottom: var(--space-40); }
+/* Indicadores agrupados em um cartão, separados por linhas finas */
+#avaliacoesTab .avl-kpis { gap: 0; padding: var(--space-24) 0; background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); }
+#avaliacoesTab .avl-kpi { padding: 0 var(--space-24); background: transparent; border: 0; border-left: var(--border-width-hairline) solid var(--border); border-radius: 0; box-shadow: none; overflow: visible; gap: var(--space-4); }
+#avaliacoesTab .avl-kpi:first-child { border-left: 0; }
+#avaliacoesTab .avl-kpi::before { display: none; }
+#avaliacoesTab .avl-kpi__label { font-size: var(--fs-11); font-weight: var(--fw-semibold); color: var(--text-secondary); letter-spacing: var(--tracking-normal); }
+#avaliacoesTab .avl-kpi__value { font-size: var(--fs-24); font-weight: var(--fw-semibold); line-height: var(--lh-normal); letter-spacing: var(--tracking-normal); }
+#avaliacoesTab .avl-kpi__sub { font-size: var(--fs-12); color: var(--text-secondary); }
+#avaliacoesTab .avl-kpi--coral .avl-kpi__value { color: var(--text-accent); }
+
+#avaliacoesTab .avl-grid { gap: var(--space-32) var(--space-40); }
+#avaliacoesTab .avl-card { padding: var(--space-24); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; }
+#avaliacoesTab .avl-card__title { font-size: var(--fs-16); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-normal); line-height: var(--lh-normal); }
+#avaliacoesTab .avl-card__sub { font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-24); }
+#avaliacoesTab .avl-bar__track { background: var(--surface-hover); }
+#avaliacoesTab .avl-section-title { font-size: var(--fs-20); font-weight: var(--fw-regular); letter-spacing: var(--tracking-tight); margin: 0 0 var(--space-16); }
+
+/* Lista de alunos: barra de busca e ações alinhadas, sem estilos inline */
+.avl-toolbar { display: flex; gap: var(--space-12); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-16); }
+.avl-toolbar__search { flex: 1; min-width: 220px; min-height: var(--control-md); padding: 0 var(--space-16); border-radius: var(--r-8); border: var(--border-width-control) solid var(--border-control); font: var(--fw-regular) var(--fs-14) var(--font); color: var(--text-default); background: var(--surface-default); }
+.avl-toolbar__search:focus { outline: none; border-color: var(--focus-ring); box-shadow: 0 0 0 var(--border-width-focus) var(--surface-default), 0 0 0 4px var(--focus-ring); }
+#avaliacoesTab .table-container { background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; }
+
+@media (max-width: 1100px) {
+  #avaliacoesTab .avl-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-24); }
+  #avaliacoesTab .avl-kpi, #avaliacoesTab .avl-kpi:first-child { border-left: 0; }
+}
+#avaliacoesTab [hidden] { display: none !important; }
