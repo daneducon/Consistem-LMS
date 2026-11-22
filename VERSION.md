@@ -29,7 +29,7 @@ Fonte única da versão: `src/version.js` (`APP_VERSION`), exibida no rodapé da
 ### v5.0 — 22/11/2026 — Fluxo em blocos e curso obrigatório (GERAÇÃO nova)
 - Cadastro individual (agora "Matrícula individual") em blocos numerados, com indicador de fase (atual em coral, concluída em verde, demais em cinza) e painel "Confirmar" com resumo.
 - Curso obrigatório: sem curso, o botão fica desabilitado e o servidor recusa a matrícula. O cadastro como lead foi descontinuado.
-- Matrícula em lote: a execução fica bloqueada enquanto houver aluno sem curso válido.
+- Matrícula em lote: fase 1 em blocos (Arquivo e Parâmetros) com painel "Próximo passo". Os parâmetros ficam bloqueados até existir um arquivo (enviado ou colado), e "Validar arquivo" só habilita com arquivo e escola. A execução fica bloqueada enquanto houver aluno sem curso válido.
 - Tokens de cor, tipografia, espaçamento, raio, sombra e z-index alinhados à DS Consistem.
 
 ### v4.8 — 30/10/2026 — Cargo das pessoas em Avaliações (RELEASE)

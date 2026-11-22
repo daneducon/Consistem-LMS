@@ -2231,3 +2231,13 @@ body.report-open { overflow: hidden; }
 @media (max-width: 640px) {
   .form-grid-2 { grid-template-columns: minmax(0, 1fr); }
 }
+/* ---------- LOTE EM BLOCOS (fase 1) ---------- */
+.flow-inline-actions { display: flex; align-items: center; gap: var(--space-12); flex-wrap: wrap; margin-top: var(--space-16); }
+.flow-hint { margin-left: auto; font-size: var(--fs-12); color: var(--text-secondary); }
+.flow-block.is-locked .form-grid-2 { opacity: 0.5; }
+.flow-block.is-locked .flow-tag { background: var(--surface-hover); color: var(--text-muted); }
+.flow-block.is-locked input:disabled, .flow-block.is-locked select:disabled { cursor: not-allowed; background: var(--surface-alt); }
+.flow-block .csv-uni-fields { padding-top: var(--space-16); border-top: 1px solid var(--border); }
+.flow-block .toggle-row { margin: 0; }
+.flow-layout .dropzone { margin-top: var(--space-8); }
+@media (max-width: 640px) { .flow-hint { margin-left: 0; } }

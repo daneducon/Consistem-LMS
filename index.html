@@ -646,177 +646,159 @@
         <p class="page-subtitle">Importe, valide e acompanhe o provisionamento de estudantes em um fluxo assistido.</p>
       </div>
 
-      <!-- Stepper -->
-      <div class="stepper">
-        <div class="step active" data-step="1">
-          <div class="step-number">1</div>
-          <div class="step-info">
-            <span class="step-label">ETAPA 01</span>
-            <span class="step-title">Upload e Configurações</span>
-          </div>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step" data-step="2">
-          <div class="step-number">2</div>
-          <div class="step-info">
-            <span class="step-label">ETAPA 02</span>
-            <span class="step-title">Validação e Prévia</span>
-          </div>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step" data-step="3">
-          <div class="step-number">3</div>
-          <div class="step-info">
-            <span class="step-label">ETAPA 03</span>
-            <span class="step-title">Execução e Relatório</span>
-          </div>
-        </div>
+      <!-- Fases do lote -->
+      <div class="phase-track stepper-phases" id="csvPhases" aria-label="Fases da matrícula em lote">
+        <span class="phase is-current" data-step="1"><i></i>Fase 1 · Arquivo</span>
+        <span class="phase" data-step="2"><i></i>Fase 2 · Validação</span>
+        <span class="phase" data-step="3"><i></i>Fase 3 · Execução</span>
       </div>
 
-      <!-- ETAPA 1: Upload -->
+      <!-- FASE 1: Arquivo -->
       <div id="csvUploadSection" class="csv-section active">
-        <div class="csv-grid">
-          <!-- Coluna Upload -->
-          <div class="card upload-mapping-card">
-            <h2 class="card-headline">Upload de Arquivo</h2>
-            <p class="card-desc">CSV com ponto e vírgula ou vírgula. Validação automática com cursos da Hotscool.</p>
+        <div class="flow-layout">
+          <div class="flow-main">
+            <!-- Bloco 1: Arquivo -->
+            <div class="card flow-block upload-mapping-card">
+              <div class="flow-block-header">
+                <span class="flow-step">1</span>
+                <h3 class="card-title">Arquivo</h3>
+                <span class="flow-tag">Obrigatório</span>
+              </div>
+              <p class="flow-block-desc">CSV com ponto e vírgula ou vírgula. A validação cruza os cursos com a Hotscool.</p>
 
-            <div class="dropzone" id="csvDropzone">
-              <input type="file" id="csvFileInput" accept=".csv,.txt" class="file-input-hidden">
-              <div class="dropzone-inner">
-                <div class="dropzone-icon-box">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
+              <div class="dropzone" id="csvDropzone">
+                <input type="file" id="csvFileInput" accept=".csv,.txt" class="file-input-hidden">
+                <div class="dropzone-inner">
+                  <div class="dropzone-icon-box">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                  </div>
+                  <p class="dropzone-title">Arraste o CSV aqui ou clique para selecionar</p>
+                  <p class="dropzone-sub" title="CSV UTF-8/ANSI • Separador ; ou , • Máx. 10MB">CSV • até 10 MB</p>
+                </div>
+              </div>
+
+              <div id="csvFileInfoBar" class="file-info-bar" style="display:none">
+                <div class="file-info-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
                   </svg>
+                  <span id="csvFileNameText">arquivo.csv</span>
+                  <span class="file-size-badge" id="csvFileSizeText">0 KB</span>
                 </div>
-                <p class="dropzone-title">Arraste o CSV aqui ou clique para selecionar</p>
-                <p class="dropzone-sub" title="CSV UTF-8/ANSI • Separador ; ou , • Máx. 10MB">CSV • até 10 MB</p>
+                <button type="button" class="btn-ghost-sm danger" id="btnRemoveFile">Excluir</button>
               </div>
-            </div>
 
-            <div id="csvFileInfoBar" class="file-info-bar" style="display:none">
-              <div class="file-info-left">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
-                <span id="csvFileNameText">arquivo.csv</span>
-                <span class="file-size-badge" id="csvFileSizeText">0 KB</span>
+              <div class="flow-inline-actions">
+                <button type="button" class="btn-ghost-sm" id="downloadTemplateBtn" title="Baixar CSV de exemplo com cabeçalho correto">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Baixar modelo CSV
+                </button>
+                <button type="button" class="btn-ghost-sm" id="togglePasteBtn" title="Colar CSV como texto">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                  Colar CSV como texto
+                </button>
+                <span class="flow-hint" title="Colunas obrigatórias: nome, email, ID dos Conteúdos. Opcionais: cpf, senha, empresa, origem etc.">Colunas obrigatórias: nome, e-mail e ID dos conteúdos</span>
               </div>
-              <button type="button" class="btn-ghost-sm danger" id="btnRemoveFile">Excluir</button>
-            </div>
-
-            <div class="csv-hint" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <span title="Colunas obrigatórias: nome, email, ID dos Conteúdos. Opcionais: cpf, senha, empresa, origem etc." style="cursor:help;display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--graphite-muted);">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                Modelo CSV
-              </span>
-              <button type="button" class="link-btn download-link" id="downloadTemplateBtn" title="Baixar CSV de exemplo com cabeçalho correto">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Baixar modelo
-              </button>
-              <span style="margin-left:auto;font-size:11px;color:var(--graphite-subtle);" title="CPF normalizado, curso validado com catálogo, senha gerada se vazia">ℹ Detalhes</span>
-            </div>
-
-            <div class="paste-toggle">
-              <button type="button" class="btn-ghost-sm" id="togglePasteBtn" title="Colar CSV como texto">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-                Colar CSV como texto
-              </button>
               <div id="pasteWrapper" class="paste-wrapper" style="display:none">
-                <textarea id="csvPasteTextarea" rows="5"
-                  placeholder="nome;email;ID dos Conteudos;..."></textarea>
+                <textarea id="csvPasteTextarea" rows="5" placeholder="nome;email;ID dos Conteudos;..."></textarea>
               </div>
             </div>
 
-            <div id="csvUniversidadeFields" style="display:none;margin-top:16px;border:1px solid var(--graphite-border);border-radius:var(--r-md);padding:16px;background:var(--surface-card);">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                <span class="form-label" style="margin:0;font-weight:600;">Dados Universidade Consistem</span>
-                <span title="Enviados à Hotscool para cada aluno do lote. Se CSV tiver colunas empresa/origem etc., prevalece por aluno." style="cursor:help;font-size:11px;color:var(--graphite-muted);border:1px solid var(--graphite-border);border-radius:10px;padding:1px 6px;">ⓘ</span>
+            <!-- Bloco 2: Parâmetros (bloqueado até o arquivo) -->
+            <div class="card flow-block batch-parameters-card is-locked" id="csvParamsBlock">
+              <div class="flow-block-header">
+                <span class="flow-step">2</span>
+                <h3 class="card-title">Parâmetros do lote</h3>
+                <span class="flow-tag" id="csvParamsTag">Bloqueado</span>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div class="form-group" style="margin:0;"><label class="form-label">Empresa</label><div class="input-icon-wrapper"><input type="text" id="csvEmpresa" placeholder="Empresa"></div></div>
-                <div class="form-group" style="margin:0;"><label class="form-label">Origem</label><div class="select-wrapper"><select id="csvOrigem"><option value="">Selecione</option><option value="Interno">Interno</option><option value="Externo">Externo</option><option value="Parceiro">Parceiro</option><option value="Indicacao">Indicação</option></select></div></div>
-                <div class="form-group" style="margin:0;"><label class="form-label">Projeto Serv</label><div class="input-icon-wrapper"><input type="text" id="csvProjetoServ" placeholder="Projeto Serv"></div></div>
-                <div class="form-group" style="margin:0;"><label class="form-label">ID Empresa</label><div class="input-icon-wrapper"><input type="text" id="csvIdEmpresa" placeholder="ID Empresa"></div></div>
-              </div>
-            </div>
-          </div>
+              <p class="flow-block-desc" id="csvParamsDesc">Envie o arquivo para liberar os parâmetros. Assim você preenche uma vez só.</p>
 
-          <!-- Coluna Parametros -->
-          <div class="card batch-parameters-card">
-            <div class="card-header">
-              <h3 class="card-title">Parâmetros do Lote</h3>
-              <span title="Escola e credenciais padrão. A validação real ocorre na próxima etapa antes de gravar." style="cursor:help;font-size:11px;color:var(--graphite-muted);border:1px solid var(--graphite-border);border-radius:10px;padding:2px 6px;">ℹ</span>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Escola Hotscool <span class="required">*</span></label>
-              <div class="select-wrapper">
-                <select id="csvSchoolSelect" required>
-                  <option value="" disabled selected>Carregando escolas...</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">País <span class="required">*</span></label>
-              <div class="select-wrapper">
-                <select id="csvPaisSelect">
-                  <option value="1" selected>Brasil</option>
-                  <option value="2">Estados Unidos</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Senha padrão <span class="field-optional" title="Se coluna senha vazia, gera automaticamente.">ⓘ</span></label>
-              <div class="input-with-action">
-                <div class="input-icon-wrapper">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  <input type="text" id="csvDefaultPassword" placeholder="Gerar automaticamente se vazio" title="Deixe vazio para gerar senha segura por aluno">
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label">Escola Hotscool <span class="required">*</span></label>
+                  <div class="select-wrapper">
+                    <select id="csvSchoolSelect" required>
+                      <option value="" disabled selected>Carregando escolas...</option>
+                    </select>
+                  </div>
                 </div>
-                <button type="button" class="btn-ghost-sm" id="copyPasswordBtn">Copiar</button>
-              </div>
-            </div>
 
-            <div class="toggle-row card-toggle" title="Envia e-mail de boas-vindas com link de ativação">
-              <div class="toggle-info">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                <div>
-                  <span class="toggle-title" style="font-size:13px;">Enviar e-mail de ativação</span>
+                <div class="form-group">
+                  <label class="form-label">País <span class="required">*</span></label>
+                  <div class="select-wrapper">
+                    <select id="csvPaisSelect">
+                      <option value="1" selected>Brasil</option>
+                      <option value="2">Estados Unidos</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group form-span-all">
+                  <label class="form-label">Senha padrão <span class="field-optional">Opcional</span></label>
+                  <div class="input-with-action">
+                    <div class="input-icon-wrapper">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      <input type="text" id="csvDefaultPassword" placeholder="Vazio gera uma senha por aluno" title="Deixe vazio para gerar senha segura por aluno">
+                    </div>
+                    <button type="button" class="btn-ghost-sm" id="copyPasswordBtn">Copiar</button>
+                  </div>
+                </div>
+
+                <div class="toggle-row card-toggle form-span-all" title="Envia e-mail de boas-vindas com link de ativação">
+                  <div class="toggle-info">
+                    <div><span class="toggle-title" style="font-size:13px;">Enviar e-mail de ativação</span></div>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="csvForceWelcomeEmail" checked>
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div id="csvUniversidadeFields" class="form-span-all csv-uni-fields" style="display:none">
+                  <span class="form-label" style="font-weight:600;">Dados da universidade <span class="field-optional">Opcional</span></span>
+                  <div class="form-grid-2" style="margin-top:12px;">
+                    <div class="form-group"><label class="form-label">Empresa</label><div class="input-icon-wrapper"><input type="text" id="csvEmpresa" placeholder="Empresa"></div></div>
+                    <div class="form-group"><label class="form-label">Origem</label><div class="select-wrapper"><select id="csvOrigem"><option value="">Selecione</option><option value="Interno">Interno</option><option value="Externo">Externo</option><option value="Parceiro">Parceiro</option><option value="Indicacao">Indicação</option></select></div></div>
+                    <div class="form-group"><label class="form-label">Projeto Serv</label><div class="input-icon-wrapper"><input type="text" id="csvProjetoServ" placeholder="Projeto Serv"></div></div>
+                    <div class="form-group"><label class="form-label">ID Empresa</label><div class="input-icon-wrapper"><input type="text" id="csvIdEmpresa" placeholder="ID Empresa"></div></div>
+                  </div>
                 </div>
               </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="csvForceWelcomeEmail" checked>
-                <span class="toggle-slider"></span>
-              </label>
             </div>
           </div>
-        </div>
 
-        <div class="form-footer" style="justify-content:flex-end;">
-          <div class="form-footer-actions">
-            <button type="button" class="btn-ghost" id="clearCsvBtn">Limpar</button>
-            <button type="button" class="btn-coral" id="btnAnalyzeCsv" title="Validação sem gravar — confirma na próxima etapa">
-              <span id="btnAnalyzeText">Avançar para Prévia</span>
-              <span id="btnAnalyzeLoader" class="loader" style="display:none"></span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
-            </button>
-          </div>
+          <!-- Painel: próximo passo -->
+          <aside class="card flow-rail">
+            <div class="flow-block-header">
+              <h3 class="card-title">Próximo passo</h3>
+            </div>
+            <p class="flow-block-desc">Validar não grava nada. Mostra os erros antes da matrícula.</p>
+            <ul class="flow-checklist" id="csvChecklist">
+              <li data-check="arquivo"><span class="check-dot"></span>
+                <div><strong>Arquivo enviado</strong><small>Envie ou cole o CSV</small></div></li>
+              <li data-check="escola"><span class="check-dot"></span>
+                <div><strong>Escola selecionada</strong><small>Escolha a escola de destino</small></div></li>
+            </ul>
+            <div class="flow-rail-actions">
+              <button type="button" class="btn-coral" id="btnAnalyzeCsv" title="Validação sem gravar — confirma na próxima etapa" disabled>
+                <span id="btnAnalyzeText">Validar arquivo</span>
+                <span id="btnAnalyzeLoader" class="loader" style="display:none"></span>
+              </button>
+              <button type="button" class="btn-ghost" id="clearCsvBtn">Recomeçar</button>
+            </div>
+          </aside>
         </div>
         <div id="csvUploadFeedback" class="feedback-box" style="display:none"></div>
       </div>

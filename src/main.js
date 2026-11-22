@@ -1291,15 +1291,50 @@ const clearCsvBtn = document.getElementById('clearCsvBtn');
 const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
 
 // Stepper elements
-const stepEls = document.querySelectorAll('.stepper .step');
+const stepEls = document.querySelectorAll('#csvPhases .phase');
 
+// Fases: atual = coral, concluída = verde, demais = cinza.
 function setStepperStep(num) {
   stepEls.forEach((s) => {
     const sNum = Number(s.dataset.step);
-    s.classList.remove('active', 'completed');
-    if (sNum < num) s.classList.add('completed');
-    else if (sNum === num) s.classList.add('active');
+    s.classList.remove('is-current', 'is-done');
+    if (sNum < num) s.classList.add('is-done');
+    else if (sNum === num) s.classList.add('is-current');
   });
+}
+
+// Fase 1: os parâmetros ficam bloqueados até existir um arquivo (enviado ou colado),
+// para o usuário não preencher e depois refazer.
+function csvHasSource() {
+  return !!csvSelectedFile || (csvPasteTextarea && csvPasteTextarea.value.trim().length > 0);
+}
+function csvReadyToAnalyze() {
+  return csvHasSource() && !!csvSchoolSelect && csvSchoolSelect.value !== '';
+}
+function updateCsvFlow() {
+  const hasSource = csvHasSource();
+  const schoolOk = !!csvSchoolSelect && csvSchoolSelect.value !== '';
+  const block = document.getElementById('csvParamsBlock');
+  if (block) {
+    block.classList.toggle('is-locked', !hasSource);
+    block.querySelectorAll('input, select, button').forEach((el) => { el.disabled = !hasSource; });
+    const tag = document.getElementById('csvParamsTag');
+    const desc = document.getElementById('csvParamsDesc');
+    if (tag) tag.textContent = hasSource ? 'Obrigatório' : 'Bloqueado';
+    if (desc) desc.textContent = hasSource
+      ? 'Defina a escola de destino e as credenciais padrão do lote.'
+      : 'Envie o arquivo para liberar os parâmetros. Assim você preenche uma vez só.';
+  }
+  const setCheck = (key, ok, text) => {
+    const li = document.querySelector(`#csvChecklist [data-check="${key}"]`);
+    if (!li) return;
+    li.classList.toggle('is-done', ok);
+    const small = li.querySelector('small');
+    if (small) small.textContent = text;
+  };
+  setCheck('arquivo', hasSource, hasSource ? (csvSelectedFile ? csvSelectedFile.name : 'CSV colado como texto') : 'Envie ou cole o CSV');
+  setCheck('escola', schoolOk, schoolOk ? csvSchoolSelect.selectedOptions[0].textContent.trim() : 'Escolha a escola de destino');
+  if (btnAnalyzeCsv) btnAnalyzeCsv.disabled = !csvReadyToAnalyze();
 }
 
 function showCsvSection(section) {
@@ -1405,7 +1440,9 @@ function updateUniversidadeFieldsVisibility() {
 
 if (csvSchoolSelect) {
   csvSchoolSelect.addEventListener('change', updateUniversidadeFieldsVisibility);
+  csvSchoolSelect.addEventListener('change', updateCsvFlow);
 }
+updateCsvFlow();
 
 // Drag & Drop
 if (csvDropzone) {
@@ -1437,6 +1474,7 @@ function handleSelectedFile(file) {
   csvFileInfoBar.style.display = 'flex';
   csvDropzone.style.display = 'none';
   hideCsvFeedback();
+  updateCsvFlow();
 }
 
 if (btnRemoveFile) {
@@ -1445,8 +1483,10 @@ if (btnRemoveFile) {
     csvFileInput.value = '';
     csvFileInfoBar.style.display = 'none';
     csvDropzone.style.display = 'block';
+    updateCsvFlow();
   });
 }
+csvPasteTextarea?.addEventListener('input', updateCsvFlow);
 
 if (togglePasteBtn) {
   togglePasteBtn.addEventListener('click', () => {
@@ -1463,6 +1503,7 @@ if (clearCsvBtn) {
     csvFileInfoBar.style.display = 'none';
     csvDropzone.style.display = 'block';
     hideCsvFeedback();
+    updateCsvFlow();
   });
 }
 
@@ -1486,7 +1527,7 @@ function showCsvFeedback(type, message) {
 function hideCsvFeedback() { csvUploadFeedback.style.display = 'none'; }
 
 function setCsvAnalyzeLoading(loading) {
-  btnAnalyzeCsv.disabled = loading;
+  btnAnalyzeCsv.disabled = loading || !csvReadyToAnalyze();
   btnAnalyzeText.style.display = loading ? 'none' : 'inline';
   btnAnalyzeLoader.style.display = loading ? 'inline-block' : 'none';
 }
@@ -1749,7 +1790,7 @@ if (previewFilterInput) {
 }
 
 if (btnBackToUpload) btnBackToUpload.addEventListener('click', () => showCsvSection('upload'));
-if (btnBackToUpload2) btnBackToUpload2.addEventListener('click', () => { csvSelectedFile = null; csvFileInput.value = ''; csvFileInfoBar.style.display = 'none'; csvDropzone.style.display = 'block'; showCsvSection('upload'); });
+if (btnBackToUpload2) btnBackToUpload2.addEventListener('click', () => { csvSelectedFile = null; csvFileInput.value = ''; csvFileInfoBar.style.display = 'none'; csvDropzone.style.display = 'block'; updateCsvFlow(); showCsvSection('upload'); });
 if (discardBatchBtn) discardBatchBtn.addEventListener('click', () => { parsedStudentsData = []; showCsvSection('upload'); });
 
 // Execution
@@ -1884,6 +1925,7 @@ if (btnExecuteEnrollments) {
         if (csvFileInfoBar) csvFileInfoBar.style.display = 'none';
         if (csvDropzone) csvDropzone.style.display = 'block';
         parsedStudentsData = [];
+        updateCsvFlow();
         showCsvSection('upload');
       });
     }
