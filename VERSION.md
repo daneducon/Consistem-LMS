@@ -26,6 +26,10 @@ Fonte única da versão: `src/version.js` (`APP_VERSION`), exibida no rodapé da
 
 ## Changelog
 
+### v5.1 — 22/11/2026 — Tela de login no padrão DS Consistem (RELEASE)
+- Eyebrow com ponto coral em DM Mono, título em peso Regular com entrelinha justa, subtítulo no estilo lead, espaçamentos, raios e sombra por token.
+- Fonte DM Mono carregada para o eyebrow.
+
 ### v5.0 — 22/11/2026 — Fluxo em blocos e curso obrigatório (GERAÇÃO nova)
 - Cadastro individual (agora "Matrícula individual") em blocos numerados, com indicador de fase (atual em coral, concluída em verde, demais em cinza) e painel "Confirmar" com resumo.
 - Curso obrigatório: sem curso, o botão fica desabilitado e o servidor recusa a matrícula. O cadastro como lead foi descontinuado.
