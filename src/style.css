@@ -2366,3 +2366,9 @@ body.report-open { overflow: hidden; }
 }
 #licensesTab .preview-table-header { flex-wrap: wrap; }
 #licensesTab .preview-table-header button { white-space: nowrap; }
+/* Cabeçalho dos cursos: abas em uma linha (sem barra de rolagem visível) e filtros em linha própria */
+#searchTab .dash-subtabs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; border-bottom: 0; }
+#searchTab .subtabs-left { overflow-x: auto; scrollbar-width: none; border-bottom: var(--border-width-hairline) solid var(--border); gap: var(--space-8); }
+#searchTab .subtabs-left::-webkit-scrollbar { display: none; }
+#searchTab .subtabs-right { width: 100%; justify-content: space-between; padding-top: var(--space-16); }
+#searchTab .subtabs-right .btn-ghost-sm { border: var(--border-width-control) solid var(--border); background: var(--surface-default); color: var(--text-default); border-radius: var(--r-8); min-height: var(--control-sm); padding: 0 var(--space-16); }

@@ -26,6 +26,9 @@ Fonte única da versão: `src/version.js` (`APP_VERSION`), exibida no rodapé da
 
 ## Changelog
 
+### v5.4 — 22/11/2026 — Cabeçalho dos cursos na Consulta do aluno (RELEASE)
+- Abas numa linha, sem barra de rolagem visível; resumo e ordenação em linha própria abaixo das abas.
+
 ### v5.3 — 22/11/2026 — Licenças e riscos no padrão DS Consistem (RELEASE)
 - Indicadores agrupados em um cartão; "Usuários por escola" com barras de proporção e "Próximos vencimentos" (linha do tempo das matrículas ativas que vencem em até 60 dias) lado a lado.
 - Tabela em cartão próprio com ações sem quebra de texto; cores e espaçamentos por token.
