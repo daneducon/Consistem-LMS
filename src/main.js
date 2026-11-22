@@ -1038,6 +1038,35 @@ function updateSelectedCount() {
   coursesBadge.textContent = `${count} curso${count === 1 ? '' : 's'} selecionado${count === 1 ? '' : 's'}`;
   // Curso é obrigatório: o botão de cadastro só habilita com ao menos um curso marcado.
   if (regSubmitBtn) regSubmitBtn.disabled = count === 0;
+  updateRegisterFlow();
+}
+
+// Resumo do painel "Confirmar" e estado das fases (atual = coral, concluída = verde, demais = cinza).
+function updateRegisterFlow() {
+  const nome = regName?.value.trim() || '';
+  const email = regEmail?.value.trim() || '';
+  const schoolOk = !!regSchool && regSchool.value !== '';
+  const alunoOk = !!nome && EMAIL_REGEX.test(email);
+  const count = selectedCourseIds.size;
+  const setCheck = (key, ok, text) => {
+    const li = document.querySelector(`#regChecklist [data-check="${key}"]`);
+    if (!li) return;
+    li.classList.toggle('is-done', ok);
+    const small = li.querySelector('small');
+    if (small) small.textContent = text;
+  };
+  setCheck('aluno', alunoOk, alunoOk ? `${nome} · ${email}` : 'Preencha nome e e-mail');
+  setCheck('escola', schoolOk, schoolOk ? regSchool.selectedOptions[0].textContent.trim() : 'Selecione a escola de destino');
+  setCheck('cursos', count > 0, count > 0 ? `${count} curso${count > 1 ? 's' : ''} selecionado${count > 1 ? 's' : ''}` : 'Selecione ao menos um curso');
+  const phase1 = alunoOk && schoolOk;
+  const phase2 = phase1 && count > 0;
+  document.querySelectorAll('#regPhases .phase').forEach((el) => {
+    const n = Number(el.dataset.phase);
+    const done = n === 1 ? phase1 : n === 2 ? phase2 : false;
+    const current = !done && (n === 1 || (n === 2 && phase1) || (n === 3 && phase2));
+    el.classList.toggle('is-done', done);
+    el.classList.toggle('is-current', current);
+  });
 }
 
 if (courseFilterInput) {
@@ -1071,6 +1100,9 @@ if (deselectAllBtn) {
 }
 
 if (regSchool) regSchool.addEventListener('change', loadCoursesForSelectedSchool);
+[regName, regEmail].forEach((el) => el?.addEventListener('input', updateRegisterFlow));
+regSchool?.addEventListener('change', updateRegisterFlow);
+updateRegisterFlow();
 
 if (regSubmitBtn) regSubmitBtn.disabled = selectedCourseIds.size === 0;
 

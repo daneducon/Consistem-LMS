@@ -2189,3 +2189,45 @@ body.report-open { overflow: hidden; }
     -webkit-print-color-adjust: exact;
   }
 }
+
+/* ---------- FLUXO EM BLOCOS (cadastro individual) · tokens DS Consistem ---------- */
+.phase-track { display: flex; align-items: center; gap: var(--space-24); margin: 0 0 var(--space-24); flex-wrap: wrap; }
+.phase { display: inline-flex; align-items: center; gap: var(--space-6); font-size: var(--fs-12); font-weight: var(--fw-medium); color: var(--text-muted); }
+.phase i { width: 8px; height: 8px; border-radius: var(--r-full); background: var(--surface-active); display: inline-block; }
+.phase.is-current { color: var(--text-accent); font-weight: var(--fw-semibold); }
+.phase.is-current i { background: var(--accent-highlight); }
+.phase.is-done { color: var(--feedback-positive); }
+.phase.is-done i { background: var(--feedback-positive); }
+
+.flow-layout { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: var(--space-40); align-items: start; }
+.flow-main { display: flex; flex-direction: column; gap: var(--space-32); min-width: 0; }
+.flow-block, .flow-rail { padding: var(--space-24); }
+.flow-rail { position: sticky; top: var(--space-24); }
+.flow-block-header { display: flex; align-items: center; gap: var(--space-12); }
+.flow-block-header .card-title { margin: 0; flex: 1; font-size: var(--fs-16); }
+.flow-step { width: 28px; height: 28px; border-radius: var(--r-full); background: var(--text-default); color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-12); font-weight: var(--fw-semibold); flex: none; }
+.flow-tag { padding: var(--space-4) var(--space-12); border-radius: var(--r-full); background: var(--surface-alt); color: var(--text-secondary); font-size: var(--fs-12); font-weight: var(--fw-semibold); }
+.flow-block-header .course-count-badge { background: var(--surface-alt); color: var(--text-secondary); border: 0; }
+.flow-block-desc { margin: var(--space-8) 0 var(--space-16); font-size: var(--fs-12); color: var(--text-secondary); }
+.form-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-20) var(--space-20); margin-top: var(--space-24); }
+.form-span-all { grid-column: 1 / -1; }
+
+.flow-checklist { list-style: none; margin: var(--space-24) 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-20); }
+.flow-checklist li { display: flex; gap: var(--space-12); align-items: flex-start; }
+.flow-checklist strong { display: block; font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--text-default); }
+.flow-checklist small { display: block; margin-top: var(--space-2); font-size: var(--fs-12); color: var(--text-secondary); }
+.check-dot { width: 18px; height: 18px; border-radius: var(--r-full); border: 1.75px solid var(--surface-active); flex: none; margin-top: 1px; position: relative; box-sizing: border-box; }
+.flow-checklist li.is-done .check-dot { background: var(--text-default); border-color: var(--text-default); }
+.flow-checklist li.is-done .check-dot::after { content: ''; position: absolute; left: 5px; top: 2px; width: 4px; height: 8px; border: solid var(--text-inverse); border-width: 0 1.75px 1.75px 0; transform: rotate(45deg); }
+.flow-rail-note { margin: 0 0 var(--space-24); }
+.flow-rail-actions { display: flex; flex-direction: column; gap: var(--space-12); }
+.flow-rail-actions .btn-coral, .flow-rail-actions .btn-ghost { width: 100%; justify-content: center; }
+.btn-coral:disabled { background: var(--surface-hover); color: var(--text-muted); cursor: not-allowed; box-shadow: none; }
+
+@media (max-width: 1100px) {
+  .flow-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-32); }
+  .flow-rail { position: static; }
+}
+@media (max-width: 640px) {
+  .form-grid-2 { grid-template-columns: minmax(0, 1fr); }
+}

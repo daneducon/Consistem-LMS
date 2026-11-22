@@ -496,156 +496,143 @@
     <!-- ============================================ -->
     <section id="registerTab" class="tab-content" style="display:none">
       <div class="page-title-block">
-        <h1 class="page-title">Cadastro Manual de Aluno</h1>
-        <p class="page-subtitle">Preencha as credenciais do estudante e selecione os cursos autorizados para
-          provisionamento automático na Hotscool.</p>
+        <h1 class="page-title">Matrícula individual</h1>
+        <p class="page-subtitle">Três etapas, nesta ordem. O cadastro só é concluído com ao menos um curso.</p>
       </div>
 
-      <div class="register-grid">
-        <!-- Coluna Esquerda: Formulario -->
-        <div class="card" id="registerFormCard">
-          <div class="card-header">
-            <div class="card-header-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </div>
-            <div>
-              <h3 class="card-title">Identificação e Acesso</h3>
-              <p class="card-subtitle">Credenciais e dados institucionais do discente</p>
-            </div>
-          </div>
+      <div class="phase-track" id="regPhases" aria-label="Fases do cadastro">
+        <span class="phase is-current" data-phase="1"><i></i>Fase 1 · Aluno</span>
+        <span class="phase" data-phase="2"><i></i>Fase 2 · Cursos</span>
+        <span class="phase" data-phase="3"><i></i>Fase 3 · Confirmar</span>
+      </div>
 
-          <form id="registerForm" class="form-stack">
-            <div class="form-group">
-              <label class="form-label">Escola de Destino Hotscool <span class="required">*</span></label>
-              <div class="select-wrapper">
-                <select id="regSchool" required>
-                  <option value="" disabled selected>Carregando escolas...</option>
-                </select>
-              </div>
+      <div class="flow-layout">
+        <div class="flow-main">
+          <!-- Bloco 1: Dados do aluno -->
+          <div class="card flow-block" id="registerFormCard">
+            <div class="flow-block-header">
+              <span class="flow-step">1</span>
+              <h3 class="card-title">Dados do aluno</h3>
+              <span class="flow-tag">Obrigatório</span>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">Nome Completo <span class="required">*</span></label>
-              <div class="input-icon-wrapper">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                <input type="text" id="regName" placeholder="Ex: Mariana Silva Souza" required autocomplete="name">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">E-mail Institucional ou Pessoal <span class="required">*</span></label>
-              <div class="input-icon-wrapper">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-                <input type="email" id="regEmail" placeholder="aluno@example.com" required autocomplete="email">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <div class="form-label-row">
-                <label class="form-label">Senha Provisoria de Acesso <span
-                    class="field-optional">Opcional</span></label>
-                <button type="button" class="link-btn" id="resetPasswordBtn">Gerar automaticamente</button>
-              </div>
-              <div class="input-icon-wrapper">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                <input type="text" id="regPassword" placeholder="Deixe vazio para gerar uma senha segura"
-                  autocomplete="new-password">
-              </div>
-              <span class="field-hint">O aluno poderá redefini-la no primeiro acesso à Hotscool.</span>
-            </div>
-
-            <div class="toggle-row">
-              <div class="toggle-info">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-                <div>
-                  <span class="toggle-title">Enviar e-mail de boas-vindas com link de ativação</span>
-                  <span class="toggle-desc">Despacho automatizado via servidor SMTP corporativo</span>
+            <form id="registerForm" class="form-stack form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Escola de destino Hotscool <span class="required">*</span></label>
+                <div class="select-wrapper">
+                  <select id="regSchool" required>
+                    <option value="" disabled selected>Carregando escolas...</option>
+                  </select>
                 </div>
               </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="regSendEmail" checked>
-                <span class="toggle-slider"></span>
-              </label>
+
+              <div class="form-group">
+                <label class="form-label">Nome completo <span class="required">*</span></label>
+                <div class="input-icon-wrapper">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <input type="text" id="regName" placeholder="Ex.: Mariana Silva Souza" required autocomplete="name">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">E-mail institucional ou pessoal <span class="required">*</span></label>
+                <div class="input-icon-wrapper">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                  <input type="email" id="regEmail" placeholder="aluno@exemplo.com" required autocomplete="email">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="form-label-row">
+                  <label class="form-label">Senha provisória <span class="field-optional">Opcional</span></label>
+                  <button type="button" class="link-btn" id="resetPasswordBtn">Gerar automaticamente</button>
+                </div>
+                <div class="input-icon-wrapper">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  <input type="text" id="regPassword" placeholder="Vazio gera uma senha segura"
+                    autocomplete="new-password">
+                </div>
+                <span class="field-hint">Opcional. O aluno redefine no primeiro acesso à Hotscool.</span>
+              </div>
+
+              <div class="toggle-row form-span-all">
+                <div class="toggle-info">
+                  <div>
+                    <span class="toggle-title">Enviar e-mail de boas-vindas</span>
+                    <span class="toggle-desc">Link de ativação enviado pelo servidor SMTP corporativo</span>
+                  </div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="regSendEmail" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </form>
+          </div>
+
+          <!-- Bloco 2: Cursos -->
+          <div class="card flow-block" id="registerCoursesCard">
+            <div class="flow-block-header">
+              <span class="flow-step">2</span>
+              <h3 class="card-title">Cursos</h3>
+              <span class="flow-tag">Obrigatório</span>
+              <span class="course-count-badge" id="coursesBadge">0 cursos selecionados</span>
             </div>
-          </form>
+            <p class="flow-block-desc">Selecione pelo menos um curso para concluir a matrícula.</p>
+
+            <div class="courses-toolbar">
+              <div class="filter-input-wrapper">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <input type="text" id="courseFilterInput" placeholder="Filtrar cursos...">
+              </div>
+              <div class="courses-actions">
+                <button type="button" class="btn-ghost-sm" id="selectAllBtn">Todos</button>
+                <button type="button" class="btn-ghost-sm" id="deselectAllBtn">Limpar</button>
+              </div>
+            </div>
+
+            <div id="coursesListContainer" class="courses-list">
+              <div class="empty-state">Selecione uma escola para carregar os cursos disponíveis.</div>
+            </div>
+          </div>
         </div>
 
-        <!-- Coluna Direita: Cursos -->
-        <div class="card" id="registerCoursesCard">
-          <div class="card-header">
-            <div class="card-header-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-              </svg>
-            </div>
-            <div>
-              <h3 class="card-title">Cursos para Matricula</h3>
-              <p class="card-subtitle">Selecione os cursos que serão liberados imediatamente</p>
-            </div>
-            <span class="course-count-badge" id="coursesBadge">0 cursos selecionados</span>
+        <!-- Painel 3: Confirmar -->
+        <aside class="card flow-rail" id="regRail">
+          <div class="flow-block-header">
+            <span class="flow-step">3</span>
+            <h3 class="card-title">Confirmar</h3>
           </div>
-
-          <div class="courses-toolbar">
-            <div class="filter-input-wrapper">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-              </svg>
-              <input type="text" id="courseFilterInput" placeholder="Filtrar cursos...">
-            </div>
-            <div class="courses-actions">
-              <button type="button" class="btn-ghost-sm" id="selectAllBtn">Todos</button>
-              <button type="button" class="btn-ghost-sm" id="deselectAllBtn">Limpar</button>
-            </div>
+          <p class="flow-block-desc">Resumo do que será gravado</p>
+          <ul class="flow-checklist" id="regChecklist">
+            <li data-check="aluno"><span class="check-dot"></span>
+              <div><strong>Aluno</strong><small id="regSumStudent">Preencha nome e e-mail</small></div></li>
+            <li data-check="escola"><span class="check-dot"></span>
+              <div><strong>Escola</strong><small id="regSumSchool">Selecione a escola de destino</small></div></li>
+            <li data-check="cursos"><span class="check-dot"></span>
+              <div><strong>Cursos</strong><small id="regSumCourses">Selecione ao menos um curso</small></div></li>
+          </ul>
+          <p class="flow-block-desc flow-rail-note">Cadastrar grava o aluno e envia o link de ativação.</p>
+          <div class="flow-rail-actions">
+            <button type="button" class="btn-coral" id="regSubmitBtn">
+              <span id="regBtnText">Cadastrar e matricular</span>
+              <span id="regBtnLoader" class="loader" style="display:none"></span>
+            </button>
+            <button type="button" class="btn-ghost" id="clearRegisterBtn">Limpar formulário</button>
           </div>
-
-          <div id="coursesListContainer" class="courses-list">
-            <div class="empty-state">Selecione uma escola para carregar os cursos disponiveis.</div>
-          </div>
-
-          <div class="license-warning">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <p><strong>Regra Hotscool:</strong> Se nenhum curso for selecionado, o cadastro será gravado na condição de
-              lead, sem consumo de licença ativa.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Footer do Cadastro -->
-      <div class="form-footer">
-        <span class="form-footer-note">* Campos obrigatorios para provisionamento imediato</span>
-        <div class="form-footer-actions">
-          <button type="button" class="btn-ghost" id="clearRegisterBtn">Limpar Formulário</button>
-          <button type="button" class="btn-coral" id="regSubmitBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <line x1="19" x2="19" y1="8" y2="14" />
-              <line x1="22" x2="16" y1="11" y2="11" />
-            </svg>
-            <span id="regBtnText">Cadastrar e Matricular Aluno</span>
-            <span id="regBtnLoader" class="loader" style="display:none"></span>
-          </button>
-        </div>
+        </aside>
       </div>
       <div id="regFeedback" class="feedback-box" style="display:none"></div>
     </section>
