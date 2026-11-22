@@ -8,6 +8,7 @@ const CACHE_TTL_MS = 10 * 60 * 1000; // fresco: serve direto
 const CACHE_STALE_MS = 30 * 60 * 1000; // velho: serve + revalida em fundo (SWR)
 
 const studentsCache = new Map();
+const leadsCache = new Map();
 const coursesCache = new Map();
 const packagesCache = new Map();
 const schoolNamesCache = new Map();
@@ -100,6 +101,7 @@ function refreshInBackground(cache, key, fetcher) {
 // nunca exposta ao cliente — vive apenas na memória do servidor.
 export function invalidateSchoolCache(apiKey) {
   studentsCache.delete(apiKey);
+  leadsCache.delete(apiKey);
   coursesCache.delete(apiKey);
   packagesCache.delete(apiKey);
   schoolNamesCache.delete(apiKey);
@@ -107,6 +109,7 @@ export function invalidateSchoolCache(apiKey) {
 
 export function clearAllCaches() {
   studentsCache.clear();
+  leadsCache.clear();
   coursesCache.clear();
   packagesCache.clear();
   schoolNamesCache.clear();
@@ -165,8 +168,8 @@ export function getSchools() {
   return schools;
 }
 
-async function fetchAllStudents(apiKey) {
-  const allStudents = [];
+async function fetchAllPages(apiKey, path) {
+  const all = [];
   let page = 0;
   let hasMore = true;
   const BATCH_SIZE = 6;
@@ -175,7 +178,7 @@ async function fetchAllStudents(apiKey) {
     const batchPages = Array.from({ length: BATCH_SIZE }, (_, i) => page + i);
     const fetchPromises = batchPages.map(async (p) => {
       try {
-        const response = await fetchWithTimeout(`${HOTSCOOL_API_URL}/students/all/${p}`, {
+        const response = await fetchWithTimeout(`${HOTSCOOL_API_URL}/${path}/${p}`, {
           method: 'GET',
           headers: {
             'x-access-token': apiKey,
@@ -204,7 +207,7 @@ async function fetchAllStudents(apiKey) {
         hasMore = false;
         break;
       }
-      allStudents.push(...res.data);
+      all.push(...res.data);
       if (res.data.length < 25) {
         hasMore = false;
         break;
@@ -214,11 +217,67 @@ async function fetchAllStudents(apiKey) {
     page += BATCH_SIZE;
   }
 
-  return allStudents;
+  return all;
+}
+
+async function fetchAllStudents(apiKey) {
+  return fetchAllPages(apiKey, 'students/all');
+}
+
+async function fetchAllLeads(apiKey) {
+  return fetchAllPages(apiKey, 'leads/all');
 }
 
 export async function fetchStudentsFromSchool(apiKey, forceRefresh = false) {
   return getCachedOrFetch(studentsCache, apiKey, () => fetchAllStudents(apiKey), { forceRefresh });
+}
+
+export async function fetchLeadsFromSchool(apiKey, forceRefresh = false) {
+  return getCachedOrFetch(leadsCache, apiKey, () => fetchAllLeads(apiKey), { forceRefresh });
+}
+
+export function matchStudentEmail(student, targetEmail) {
+  const want = String(targetEmail || '').trim().toLowerCase();
+  if (!want) return false;
+  if (String(student?.email || '').trim().toLowerCase() === want) return true;
+  const extra = student?.emails;
+  if (Array.isArray(extra)) {
+    return extra.some((e) => String(e).trim().toLowerCase() === want);
+  }
+  if (typeof extra === 'string' && extra) {
+    return extra.split(',').some((e) => e.trim().toLowerCase() === want);
+  }
+  return false;
+}
+
+// Busca um aluno por e-mail parando na primeira página com match — evita o
+// fetch completo (60 páginas) nos fluxos pontuais (reativar/bloquear/desmatricular),
+// que estouravam timeout no serverless.
+export async function findStudentInSchool(apiKey, email) {
+  for (let page = 0; page < 60; page++) {
+    let list = [];
+    try {
+      const response = await fetchWithTimeout(`${HOTSCOOL_API_URL}/students/all/${page}`, {
+        method: 'GET',
+        headers: {
+          'x-access-token': apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+      if (!response.ok) return null;
+      const data = await response.json().catch(() => null);
+      const raw = Array.isArray(data) ? data : (data?.data || []);
+      list = Array.isArray(raw) ? raw : [];
+    } catch {
+      return null;
+    }
+    if (list.length === 0) return null;
+    const found = list.find((s) => matchStudentEmail(s, email));
+    if (found) return found;
+    if (list.length < 25) return null;
+  }
+  return null;
 }
 
 /**

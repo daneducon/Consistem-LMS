@@ -3,9 +3,11 @@ import test from 'node:test';
 
 import {
   fetchWithTimeout,
+  findStudentInSchool,
   getSchools,
   invalidateSchoolCache,
   mapWithConcurrency,
+  matchStudentEmail,
 } from '../api/hotscool.js';
 
 test('mapWithConcurrency preserves order under a limit', async () => {
@@ -57,6 +59,33 @@ test('fetchWithTimeout does not retry POST on server error', async () => {
   }
 });
 
+test('matchStudentEmail covers primary and secondary emails', () => {
+  assert.equal(matchStudentEmail({ email: 'A@x.com' }, 'a@x.com'), true);
+  assert.equal(matchStudentEmail({ email: 'a@x.com', emails: ['b@x.com'] }, 'B@X.COM'), true);
+  assert.equal(matchStudentEmail({ email: 'a@x.com', emails: 'b@x.com, c@x.com' }, 'c@x.com'), true);
+  assert.equal(matchStudentEmail({ email: 'a@x.com' }, 'z@x.com'), false);
+  assert.equal(matchStudentEmail({}, 'a@x.com'), false);
+});
+
+test('findStudentInSchool stops at first matching page', async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async (url) => {
+    calls += 1;
+    const page = Number(String(url).split('/').pop());
+    const list = page === 1 ? [{ id: 7, email: 'alvo@x.com' }] : Array.from({ length: 25 }, (_, i) => ({ id: page * 100 + i, email: `u${page}-${i}@x.com` }));
+    return new Response(JSON.stringify(list), { status: 200 });
+  };
+  try {
+    const found = await findStudentInSchool('k', 'ALVO@x.com');
+    assert.equal(found?.id, 7);
+    assert.equal(calls, 2);
+    const missing = await findStudentInSchool('k', 'ninguem@x.com');
+    assert.equal(missing, null);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 test('getSchools reads indexed keys in order and invalidate is safe', () => {
   const prev = { ...process.env };
   delete process.env.HOTSCOOL_API_KEYS;

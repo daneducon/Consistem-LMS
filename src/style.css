@@ -9,40 +9,118 @@
 /* ---------- TOKENS ---------- */
 :root {
   /* Colors */
-  --bg: #f8f9fa;
-  --surface-card: #ffffff;
-  --surface-sunken: #f1f3f5;
-  --surface-container: #edeeef;
-  --graphite: #2e2e30;
-  --graphite-hover: #222223;
-  --graphite-muted: #68686d;
-  --graphite-subtle: #a5a5ab;
-  --graphite-border: #e8e9eb;
-  --coral: #df5241;
-  --coral-hover: #c84434;
-  --coral-subtle: #fceee5;
-  --coral-surface: #fff5f4;
-  --gold: #ebaf2d;
-  --gold-subtle: #fcf5e5;
-  --success: #2e9e66;
-  --success-subtle: #eaf7f0;
-  --error: #ba1a1a;
-  --error-subtle: #ffdad6;
+  /* Valores alinhados à biblioteca DS Consistem (fonte da verdade) */
+  --bg: #f5f5f5;                              /* color/surface-alt */
+  --surface-card: #ffffff;                    /* color/surface-default */
+  --surface-sunken: #f5f5f5;                  /* color/surface-alt */
+  --surface-container: #eaeaea;               /* color/surface-hover */
+  --graphite: #2e2e30;                        /* color/text-default, surface-inverse */
+  --graphite-hover: #2a2a2c;                  /* color/surface-inverse-hover */
+  --graphite-muted: rgba(46,46,48,0.70);      /* color/text-secondary */
+  --graphite-subtle: rgba(46,46,48,0.40);     /* color/text-muted (disabled only) */
+  --graphite-border: #eaeaea;                 /* color/border */
+  --coral: #df5241;                           /* color/accent-highlight */
+  --coral-hover: #cb4b3b;                     /* color/accent-highlight-hover */
+  --coral-subtle: #fceeec;                    /* color/accent-soft */
+  --coral-surface: #fceeec;                   /* color/accent-soft */
+  --gold: #ebaf2d;                            /* color/accent-warm */
+  --gold-subtle: #fcf5e5;                     /* sem token na biblioteca (mantido) */
+  --success: #1e7a45;                         /* color/feedback-positive */
+  --success-subtle: #eaf7f0;                  /* sem token na biblioteca (mantido) */
+  --error: #c4432e;                           /* color/feedback-negative */
+  --error-subtle: #f5c9c4;                    /* color/feedback-negative-soft */
+  --warning: #956a0e;                         /* color/feedback-warning */
+  --info: #2e6b8e;                            /* color/feedback-informative */
 
   /* Typography */
   --font: 'DM Sans', system-ui, -apple-system, sans-serif;
 
   /* Radius */
-  --r-sm: 6px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  --r-xl: 20px;
+  --r-sm: 4px;                                /* radius/radius-4 */
+  --r-md: 12px;                               /* radius/radius-12 */
+  --r-lg: 16px;                               /* radius/radius-16 */
+  --r-xl: 24px;                               /* radius/radius-24 */
   --r-full: 9999px;
 
-  /* Shadows */
-  --shadow-card: 0 4px 20px -2px rgba(46,46,48,0.04), 0 2px 6px -1px rgba(46,46,48,0.02);
-  --shadow-float: 0 12px 32px -4px rgba(46,46,48,0.08), 0 4px 12px -2px rgba(46,46,48,0.03);
-  --shadow-elevated: 0 24px 48px -8px rgba(46,46,48,0.16);
+  /* Shadows (efeitos da DS Consistem: shadow/*) */
+  --shadow-card: 0 4px 20px -2px rgba(46,46,48,0.04), 0 2px 6px -1px rgba(46,46,48,0.02); /* sem efeito equivalente na biblioteca (mantido) */
+  --shadow-float: 0 4px 8px 0 rgba(0,0,0,0.10);          /* shadow/shadow-float */
+  --shadow-media: 0 20px 40px 0 rgba(0,0,0,0.10);        /* shadow/shadow-media */
+  --shadow-overlay: 0 8px 32px 0 rgba(0,0,0,0.28);       /* shadow/shadow-overlay */
+  --shadow-inner-hairline: inset 0 0 0 1px rgba(255,255,255,0.14); /* shadow/shadow-inner-hairline */
+  --shadow-elevated: 0 24px 48px -8px rgba(46,46,48,0.16); /* sem efeito equivalente na biblioteca (mantido) */
+
+  /* ---- Tokens da DS Consistem que faltavam no projeto ---- */
+  /* Cores de texto */
+  --text-default: #2e2e30;                    /* color/text-default */
+  --text-secondary: rgba(46,46,48,0.70);      /* color/text-secondary */
+  --text-muted: rgba(46,46,48,0.40);          /* color/text-muted (somente desabilitado) */
+  --text-inverse: #ffffff;                    /* color/text-inverse */
+  --text-inverse-secondary: rgba(255,255,255,0.70); /* color/text-inverse-secondary */
+  --text-accent: #cb4b3b;                     /* color/text-accent (texto coral em fundo claro) */
+  /* Superfícies */
+  --surface-default: #ffffff;                 /* color/surface-default */
+  --surface-alt: #f5f5f5;                     /* color/surface-alt */
+  --surface-hover: #eaeaea;                   /* color/surface-hover */
+  --surface-active: #bebebf;                  /* color/surface-active */
+  --surface-inverse: #2e2e30;                 /* color/surface-inverse */
+  --surface-inverse-hover: #2a2a2c;           /* color/surface-inverse-hover */
+  --surface-inverse-active: #212122;          /* color/surface-inverse-active */
+  --surface-inverse-strong: #212122;          /* color/surface-inverse-strong */
+  --surface-glass: rgba(255,255,255,0.10);    /* color/surface-glass */
+  --scrim: #131314;                           /* color/scrim */
+  /* Acento e feedback */
+  --accent-highlight: #df5241;                /* color/accent-highlight */
+  --accent-highlight-hover: #cb4b3b;          /* color/accent-highlight-hover */
+  --accent-highlight-active: #9e3a2e;         /* color/accent-highlight-active */
+  --accent-soft: #fceeec;                     /* color/accent-soft */
+  --accent-warm: #ebaf2d;                     /* color/accent-warm */
+  --accent-warm-hover: #e9a616;               /* color/accent-warm-hover */
+  --accent-warm-active: #b58111;              /* color/accent-warm-active */
+  --feedback-positive: #1e7a45;               /* color/feedback-positive */
+  --feedback-warning: #956a0e;                /* color/feedback-warning */
+  --feedback-negative: #c4432e;               /* color/feedback-negative */
+  --feedback-negative-soft: #f5c9c4;          /* color/feedback-negative-soft */
+  --feedback-negative-inverse: #ea8b80;       /* color/feedback-negative-inverse */
+  --feedback-informative: #2e6b8e;            /* color/feedback-informative */
+  /* Bordas e foco */
+  --border: #eaeaea;                          /* color/border */
+  --border-hover: #bebebf;                    /* color/border-hover */
+  --border-control: #737374;                  /* color/border-control */
+  --border-control-hover: #585859;            /* color/border-control-hover */
+  --border-inverse: rgba(255,255,255,0.60);   /* color/border-inverse */
+  --focus-ring: #2e2e30;                      /* color/focus-ring */
+  --focus-ring-contrast: #ffffff;             /* color/focus-ring-contrast */
+  --border-width-focus: 2px;                  /* border-width/border-focus */
+  --border-width-accent: 2px;                 /* border-width/border-accent */
+  --border-width-control: 1px;                /* border-width/border-control-width */
+  --border-width-hairline: 1px;               /* border-width/border-hairline */
+  /* Tipografia */
+  --font-sans: 'DM Sans', system-ui, sans-serif;  /* font-family/font-sans */
+  --font-mono: 'DM Mono', ui-monospace, monospace; /* font-family/font-mono */
+  --fs-10: 10px; --fs-11: 11px; --fs-12: 12px; --fs-14: 14px; --fs-16: 16px; --fs-18: 18px;
+  --fs-20: 20px; --fs-24: 24px; --fs-28: 28px; --fs-32: 32px; --fs-36: 36px; --fs-40: 40px;
+  --fs-48: 48px; --fs-64: 64px; --fs-96: 96px;
+  --fw-light: 300; --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
+  --lh-none: 1; --lh-tight: 1.1; --lh-snug: 1.2; --lh-normal: 1.3; --lh-comfortable: 1.4; --lh-relaxed: 1.5;
+  --tracking-tight: -0.02em; --tracking-normal: 0; --tracking-wide: 0.06em; --tracking-caps: 0.2em;
+  /* Espaçamento (escala da biblioteca, em px) */
+  --space-0: 0px; --space-2: 2px; --space-4: 4px; --space-6: 6px; --space-8: 8px; --space-12: 12px;
+  --space-16: 16px; --space-20: 20px; --space-24: 24px; --space-32: 32px; --space-40: 40px; --space-48: 48px;
+  --space-56: 56px; --space-64: 64px; --space-80: 80px; --space-96: 96px; --space-112: 112px; --space-128: 128px;
+  --space-160: 160px; --space-192: 192px; --space-256: 256px;
+  /* Tamanhos de controle e ícone */
+  --control-xs: 36px; --control-sm: 40px; --control-md: 48px; --control-lg: 56px; --target-min: 44px;
+  --icon-sm: 16px; --icon-md: 20px; --icon-lg: 24px; --icon-xl: 32px;
+  /* Raios adicionais */
+  --r-none: 0px; --r-2: 2px; --r-8: 8px; --r-full-lib: 9999px;
+  /* Layout e breakpoints */
+  --layout-container: 1440px; --layout-section-max: 1350px; --layout-navbar-main: 64px; --layout-navbar-utility: 32px; --layout-navbar-breadcrumb: 32px;
+  --bp-sm: 640px; --bp-md: 768px; --bp-lg: 1024px; --bp-xl: 1366px;
+  /* Movimento e camadas */
+  --duration-fast: 120ms; --duration-base: 200ms; --duration-slow: 320ms; --duration-slower: 450ms; --duration-fade: 700ms; --duration-sheen: 900ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1); --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --z-skiplink: 70; --z-modal: 61; --z-overlay: 60; --z-sticky: 50; --z-popover: 30; --z-dropdown: 20;
 
   /* Layout */
   --sidebar-w: 248px;
@@ -550,6 +628,9 @@ body.report-open { overflow: hidden; }
   gap: 24px;
   margin-bottom: 32px;
 }
+/* Aba Licenças: 4 KPIs em cima, 3 escolas embaixo. */
+#licensesTab .lic-kpi-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#licSchoolsRow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .kpi-card {
   background: var(--surface-card);
   border-radius: var(--r-lg);
@@ -596,6 +677,21 @@ body.report-open { overflow: hidden; }
 }
 @media (prefers-reduced-motion: reduce) {
   .dashboard-360.is-syncing .kpi-value { animation: none; }
+}
+
+/* Skeletons da aba Licenças: blocos com shimmer enquanto cada escola carrega. */
+.skel {
+  color: transparent !important;
+  background: linear-gradient(100deg, #d8d9dc 35%, #f2f3f4 50%, #d8d9dc 65%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: kpiSyncShimmer 1.2s linear infinite;
+  user-select: none;
+  pointer-events: none;
+}
+.skel-row td > * { display: inline-block; vertical-align: middle; }
+@media (prefers-reduced-motion: reduce) {
+  .skel { animation: none; }
 }
 
 /* ---------- SUBTABS ---------- */
@@ -732,6 +828,33 @@ body.report-open { overflow: hidden; }
   transition: all 0.15s;
 }
 .btn-cert:hover { background: #d1fae5; }
+.btn-reactivate {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--gold-subtle);
+  color: #9c7013;
+  border: 1px solid rgba(235,175,45,0.4);
+  border-radius: var(--r-md);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-reactivate:hover:not(:disabled) { background: #f7e3ac; }
+.btn-reactivate:disabled { opacity: 0.6; cursor: wait; }
+.btn-reactivate.ghost {
+  background: transparent;
+  color: var(--graphite-muted);
+  border: 1px dashed var(--graphite-border);
+}
+.btn-reactivate.ghost:hover:not(:disabled) { background: var(--surface-muted); color: var(--graphite); }
+.course-card.course-blocked { border-left: 4px solid var(--coral); }
+.course-card-actions { flex-wrap: wrap; }
 
 /* ---------- CERTS GRID ---------- */
 .certs-grid {
@@ -1544,7 +1667,7 @@ body.report-open { overflow: hidden; }
 }
 .data-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid #f1f3f5;
+  border-bottom: 1px solid #eaeaea;
   vertical-align: middle;
 }
 .data-table tbody tr:hover { background: #fafbfc; }
@@ -1902,6 +2025,8 @@ body.report-open { overflow: hidden; }
   .profile-hero { grid-template-columns: 88px minmax(220px, 1fr) minmax(240px, 1fr); }
   .profile-actions { grid-column: 2 / -1; border-top: 1px solid var(--graphite-border); margin-top: 20px; padding-top: 20px; }
   .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #licensesTab .lic-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #licSchoolsRow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .courses-grid, .certs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .register-grid, .csv-grid { grid-template-columns: 1fr; }
   #registerFormCard, #registerCoursesCard, .csv-grid > :first-child, .csv-grid > :last-child { grid-column: 1 / -1; }
@@ -1954,6 +2079,8 @@ body.report-open { overflow: hidden; }
   .search-input-wrapper { flex: 0 0 100%; }
   .search-form > .btn-secondary-outline, .search-form > .btn-coral { flex: 1; justify-content: center; }
   .kpi-row { grid-template-columns: 1fr; gap: 12px; margin-bottom: 24px; }
+  #licensesTab .lic-kpi-row,
+  #licSchoolsRow { grid-template-columns: 1fr; }
   .kpi-card { padding: 18px 20px; }
   .exec-stats-row { grid-template-columns: 1fr; }
   .preview-file-bar { grid-template-columns: 1fr; }

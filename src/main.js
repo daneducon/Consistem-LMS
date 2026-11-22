@@ -1,4 +1,22 @@
 import { initializeLessonPlan, refreshLessonPlanPreview } from './lesson-plan.js';
+import { APP_VERSION } from './version.js';
+import './avaliacoes.css';
+import { buildCsv, buildScope, reportPages } from './avaliacoes-relatorio.js';
+import {
+  barRows,
+  kpiCardsFor,
+  columnChart,
+  computeStats,
+  COLORS,
+  donutChart,
+  formatNumber,
+  formatPercent,
+  kpiCard,
+  lineChart,
+} from './avaliacoes-dashboard.js';
+
+const appVersionEl = document.getElementById('appVersion');
+if (appVersionEl) appVersionEl.textContent = `v${APP_VERSION}`;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -18,6 +36,7 @@ function safeHttpsUrl(value) {
 }
 
 const loginError = document.getElementById('loginError');
+let currentUserRole = null;
 const googleLoginButton = document.getElementById('googleLoginButton');
 const authenticatedUserName = document.getElementById('authenticatedUserName');
 const authenticatedUserEmail = document.getElementById('authenticatedUserEmail');
@@ -33,6 +52,7 @@ function showLoginError(message) {
 }
 
 function showAuthenticatedApp(user) {
+  currentUserRole = user.role || null;
   if (authenticatedUserName) authenticatedUserName.textContent = user.name || 'Usuario autorizado';
   if (authenticatedUserEmail) authenticatedUserEmail.textContent = user.email || '';
   if (auditorName) auditorName.textContent = user.name || 'Usuário autorizado';
@@ -40,6 +60,13 @@ function showAuthenticatedApp(user) {
   if (user.role === 'viewer') {
     document.querySelectorAll('[data-sidebar="register"], [data-sidebar="csv"]')
       .forEach((button) => { button.hidden = true; });
+  }
+  // Gestor: só a aba Avaliações, em leitura. Os demais menus ficam ocultos.
+  if (user.role === 'gestor') {
+    document.querySelectorAll('.sidebar-btn').forEach((button) => {
+      if (button.dataset.sidebar !== 'avaliacoes') button.hidden = true;
+    });
+    switchTab('avaliacoes');
   }
 
   if (user.picture) {
@@ -157,6 +184,8 @@ const tabNames = {
   register: 'Gestao de Alunos / Cadastro & Matricula Individual',
   csv: 'Matricula em Lote (CSV)',
   lesson: 'Gerador de Plano de Aula',
+  licenses: 'Licenças e Riscos',
+  avaliacoes: 'Avaliações',
 };
 
 function switchTab(target) {
@@ -173,6 +202,8 @@ function switchTab(target) {
   if (target === 'register') ensureSchoolsLoaded();
   else if (target === 'csv') ensureCsvSchoolsLoaded();
   else if (target === 'lesson') requestAnimationFrame(refreshLessonPlanPreview);
+  else if (target === 'licenses') ensureLicensesLoaded();
+  else if (target === 'avaliacoes') ensureAvaliacoesLoaded();
 }
 
 sidebarBtns.forEach((btn) => {
@@ -451,6 +482,30 @@ function renderStudentCourses(courses) {
     const accessUrl = safeHttpsUrl(c.acessoUrl) || 'https://app.hotscool.com/';
     const certificateUrl = safeHttpsUrl(c.certificadoUrl);
 
+    // Status de acesso da matrícula: fonte oficial GET /students/course/access
+    // (status 1=Ativo, 2=Bloqueado). O botão fica sempre visível para
+    // liberação em 1 clique sem ir ao painel da Hotscool.
+    const syncing = c.acessoSincronizando === true || (c.acessoAtivo === undefined && c.statusMatricula === undefined);
+    const isBlocked = c.acessoAtivo === false;
+    const accessLabel = syncing ? 'Sincronizando…' : (c.statusMatricula === 'expirado' ? 'Expirado' : isBlocked ? 'Bloqueado' : 'Ativo');
+    const accessClass = syncing ? 'info' : isBlocked ? 'error' : 'success';
+    const accessTitle = syncing
+      ? 'Carregando dados do curso…'
+      : isBlocked
+        ? 'Matrícula bloqueada/expirada neste curso. Use Reativar acesso.'
+        : 'Status sincronizado com a Hotscool. Se o aluno relatar falta de acesso, use Liberar acesso.';
+    const limitLabel = (!syncing && (c.dataLimite || c.dataExpiracao))
+      ? `<span style="font-size:11px;color:var(--graphite-muted)">Limite: ${escapeHtml(c.dataLimite || c.dataExpiracao)}</span>`
+      : '';
+
+    const hasCourseRef = Number.isSafeInteger(Number(c.id_curso)) && c.schoolId !== undefined && c.schoolId !== null;
+    const reactivateBtn = hasCourseRef
+      ? `<button type="button" class="btn-reactivate ${isBlocked ? 'blocked' : 'ghost'}" data-reactivate-course="${escapeHtml(String(c.id_curso))}" data-reactivate-school="${escapeHtml(String(c.schoolId))}" data-reactivate-title="${title}" title="Libera o acesso via API sem precisar abrir o painel da Hotscool">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10"/><path d="M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>
+          ${isBlocked ? 'Reativar acesso' : 'Liberar acesso'}
+        </button>`
+      : '';
+
     let actions = '';
     if (isDone && certificateUrl) {
       actions = `<a href="${certificateUrl}" target="_blank" rel="noopener noreferrer" class="btn-cert">
@@ -463,20 +518,23 @@ function renderStudentCourses(courses) {
         Continuar Curso
       </a>`;
     }
+    if (reactivateBtn) actions += reactivateBtn;
 
     const progressClass = isDone ? 'green' : (perc >= 50 ? 'gold' : '');
 
     return `
-      <div class="course-card">
+      <div class="course-card ${isBlocked ? 'course-blocked' : ''}">
         <div class="course-card-cover ${imageUrl ? '' : 'empty'}">
           ${imageUrl
-            ? `<img src="${imageUrl}" alt="Capa do curso ${title}" loading="lazy">`
-            : `<span>${escapeHtml(c.titulo_curso?.slice(0, 1) || 'H')}</span>`}
+        ? `<img src="${imageUrl}" alt="Capa do curso ${title}" loading="lazy">`
+        : `<span>${escapeHtml(c.titulo_curso?.slice(0, 1) || 'H')}</span>`}
         </div>
         <div class="course-card-body">
         <div class="course-card-status">
           <span class="status-pill ${statusClass}">${statusText}</span>
+          <span class="status-pill ${accessClass}" title="${escapeHtml(accessTitle)}">${accessLabel}</span>
           ${turma ? `<span style="font-size:11px;color:var(--graphite-muted)">Turma: ${turma}</span>` : ''}
+          ${limitLabel}
         </div>
         <h4 class="course-card-title">${title}</h4>
         <div class="course-card-meta">
@@ -496,6 +554,56 @@ function renderStudentCourses(courses) {
         </div>
       </div>`;
   }).join('');
+}
+
+async function handleReactivateClick(event) {
+  const btn = event.target?.closest?.('[data-reactivate-course]');
+  if (!btn || !dashCoursesContainer.contains(btn)) return;
+  if (btn.disabled) return;
+  const email = dashStudentEmail?.textContent?.trim() || emailInput.value.trim();
+  if (!EMAIL_REGEX.test(email)) {
+    alert('E-mail do aluno inválido para reativação.');
+    return;
+  }
+  const courseTitle = btn.dataset.reactivateTitle || `curso ${btn.dataset.reactivateCourse}`;
+  const isBlockedCourse = btn.classList.contains('blocked');
+  if (!isBlockedCourse && !confirm(`Liberar o acesso de ${email} ao curso "${courseTitle}"?`)) return;
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'Reativando…';
+  try {
+    const res = await fetch('/api/student', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'reactivate',
+        email,
+        id_curso: Number(btn.dataset.reactivateCourse),
+        schoolId: Number(btn.dataset.reactivateSchool),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Não foi possível reativar o acesso.');
+    btn.innerHTML = 'Acesso reativado ✓';
+    const card = btn.closest('.course-card');
+    const pill = card?.querySelector('.status-pill.error');
+    if (pill) {
+      pill.className = 'status-pill success';
+      pill.textContent = 'Ativo';
+    }
+    btn.remove();
+    const fullResponse = await fetch(`/api/student?email=${encodeURIComponent(email)}&refresh=true`);
+    if (fullResponse.ok) showDashboard(await fullResponse.json());
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+    alert(err.message);
+  }
+}
+
+if (dashCoursesContainer && !dashCoursesContainer.dataset.reactivateBound) {
+  dashCoursesContainer.dataset.reactivateBound = '1';
+  dashCoursesContainer.addEventListener('click', handleReactivateClick);
 }
 
 function renderStudentCertificates(certs) {
@@ -540,15 +648,15 @@ function renderStudentTrails(trails) {
     const matriculados = t.matriculados != null ? t.matriculados : total;
     const cursosHtml = Array.isArray(t.cursos) && t.cursos.length
       ? `<div style="margin-top:12px;display:flex;flex-direction:column;gap:6px;">${t.cursos.map((c) => {
-          const cp = Math.min(100, Math.max(0, c.percentual || 0));
-          const cdone = c.concluido || cp >= 100;
-          const dot = cdone ? '✓' : c.matriculado ? '●' : '○';
-          const col = cdone ? 'var(--success)' : c.matriculado ? 'var(--gold)' : 'var(--graphite-muted)';
-          return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:6px 8px;background:var(--surface-muted);border-radius:6px;">
+        const cp = Math.min(100, Math.max(0, c.percentual || 0));
+        const cdone = c.concluido || cp >= 100;
+        const dot = cdone ? '✓' : c.matriculado ? '●' : '○';
+        const col = cdone ? 'var(--success)' : c.matriculado ? 'var(--gold)' : 'var(--graphite-muted)';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:6px 8px;background:var(--surface-muted);border-radius:6px;">
             <span style="display:flex;align-items:center;gap:6px;"><span style="color:${col};font-weight:700;">${dot}</span> ${escapeHtml(c.titulo_curso)}</span>
             <span style="font-weight:600;color:${col};">${cp}%</span>
           </div>`;
-        }).join('')}</div>`
+      }).join('')}</div>`
       : '';
     return `
       <div class="course-card" style="border-left:4px solid ${isDone ? 'var(--success)' : isProgress ? 'var(--gold)' : 'var(--graphite-border)'}">
@@ -558,13 +666,13 @@ function renderStudentTrails(trails) {
             <span style="font-size:11px;color:var(--graphite-muted)">${concluidos}/${total} cursos • ${matriculados} matriculados</span>
           </div>
           <h4 class="course-card-title">${escapeHtml(t.nome || t.nome_trilha || 'Trilha')}</h4>
-          ${t.descricao ? `<p style="font-size:12px;color:var(--graphite-muted);margin:4px 0 8px;">${escapeHtml(t.descricao.slice(0,180))}</p>` : ''}
+          ${t.descricao ? `<p style="font-size:12px;color:var(--graphite-muted);margin:4px 0 8px;">${escapeHtml(t.descricao.slice(0, 180))}</p>` : ''}
           <div class="course-progress-section">
             <div class="course-progress-row">
               <span class="course-progress-label">Progresso da trilha</span>
               <span class="course-progress-pct">${perc}%</span>
             </div>
-            <div class="progress-bar"><div class="progress-bar-fill ${isDone ? 'green' : perc>=50?'gold':''}" style="width:${perc}%"></div></div>
+            <div class="progress-bar"><div class="progress-bar-fill ${isDone ? 'green' : perc >= 50 ? 'gold' : ''}" style="width:${perc}%"></div></div>
           </div>
           ${cursosHtml}
         </div>
@@ -585,6 +693,29 @@ function showDashboard(data) {
   if (registryStudentStatus) registryStudentStatus.textContent = data.status || 'Nao informado';
   if (registryStudentId) registryStudentId.textContent = data.id ? `#${data.id}` : '-';
   if (registryExternalCode) registryExternalCode.textContent = data.codigoExterno || 'Não informado';
+
+  // Pill principal do header: reflete bloqueios por curso.
+  const dashStudentStatus = document.getElementById('dashStudentStatus');
+  if (dashStudentStatus) {
+    const blocked = Number(data.totalBloqueados || 0);
+    const total = Number(data.totalCursos || 0);
+    let label = data.status || 'Ativo';
+    let cls = 'status-pill success';
+    if (data.detail === 'summary' && !total) {
+      label = 'Sincronizando…';
+      cls = 'status-pill info';
+    } else if (blocked > 0 && blocked >= total && total > 0) {
+      label = 'Matrícula Bloqueada';
+      cls = 'status-pill error';
+    } else if (blocked > 0) {
+      label = `${blocked} curso(s) bloqueado(s)`;
+      cls = 'status-pill warning';
+    } else if (label === 'Ativo') {
+      label = 'Matrícula Ativa';
+    }
+    dashStudentStatus.className = cls;
+    dashStudentStatus.textContent = label;
+  }
 
   const avatarUrl = safeHttpsUrl(data.avatar);
   if (avatarUrl) {
@@ -1018,7 +1149,7 @@ if (registerForm) {
 
       showRegisterFeedback('success',
         `<strong>${escapeHtml(data.message)}</strong>${cursosHtml}` +
-        `<p style="font-size:12px;margin-top:8px;opacity:0.7;">O cadastro e instantaneo. Pode levar alguns segundos para aparecer na consulta.</p>` +
+        `<p style="font-size:12px;margin-top:8px;opacity:0.7;">O cadastro é instantâneo. Pode levar alguns segundos para aparecer na consulta.</p>` +
         `<button type="button" id="goToSearchBtn" class="btn-coral" style="margin-top:12px;padding:8px 16px;font-size:13px;width:auto;">Ver cadastro deste aluno</button>`
       );
 
@@ -1756,3 +1887,833 @@ if (enrollNewCourseBtn) {
 
 initializeAuthentication();
 initializeLessonPlan();
+
+// ==========================================
+// ABA LICENCAS E RISCOS
+// ==========================================
+const licSchoolSelect = document.getElementById('licSchoolSelect');
+const licChips = document.getElementById('licChips');
+const licSearchInput = document.getElementById('licSearchInput');
+const licRefreshBtn = document.getElementById('licRefreshBtn');
+const licExportBtn = document.getElementById('licExportBtn');
+const licTableBody = document.getElementById('licTableBody');
+const licError = document.getElementById('licError');
+const licMeta = document.getElementById('licMeta');
+const licSelectAll = document.getElementById('licSelectAll');
+const licPageSize = document.getElementById('licPageSize');
+const licPagination = document.getElementById('licPagination');
+const licSelectedCount = document.getElementById('licSelectedCount');
+const licBatchRenew = document.getElementById('licBatchRenew');
+const licBatchWithdraw = document.getElementById('licBatchWithdraw');
+const licBatchFeedback = document.getElementById('licBatchFeedback');
+const licSchoolsRow = document.getElementById('licSchoolsRow');
+
+let licData = null;
+let licLoaded = false;
+let licLoading = false;
+let licRiskVal = 'all';
+let licSelected = new Set();
+let licPage = 1;
+let licPageSizeVal = 20;
+
+function licRowKey(item) {
+  return `${item.schoolId}|${item.email}|${item.courseId}`;
+}
+
+function licCanWrite() {
+  return currentUserRole !== 'viewer';
+}
+
+function licFilteredItems() {
+  if (!licData) return [];
+  const schoolVal = licSchoolSelect?.value ?? 'all';
+  const term = (licSearchInput?.value || '').toLowerCase().trim();
+  return licData.items.filter((item) => {
+    if (schoolVal !== 'all' && String(item.schoolId) !== String(schoolVal)) return false;
+    if (licRiskVal === 'risk' && !item.emRisco) return false;
+    if (licRiskVal === 'active' && item.acessoAtivo !== true) return false;
+    if (licRiskVal === 'blocked' && item.acessoAtivo !== false) return false;
+    if (term && !`${item.nome} ${item.email} ${item.titulo}`.toLowerCase().includes(term)) return false;
+    return true;
+  });
+}
+
+function licFilteredUnenrolled() {
+  if (!licData || licRiskVal !== 'none') return [];
+  const schoolVal = licSchoolSelect?.value ?? 'all';
+  const term = (licSearchInput?.value || '').toLowerCase().trim();
+  return (licData.unenrolled || []).filter((person) => {
+    if (schoolVal !== 'all' && String(person.schoolId) !== String(schoolVal)) return false;
+    if (term && !`${person.nome} ${person.email}`.toLowerCase().includes(term)) return false;
+    return true;
+  });
+}
+
+function licFormatDate(iso, estimado) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  if (isNaN(d)) return '-';
+  return d.toLocaleDateString('pt-BR') + (estimado ? ' *' : '');
+}
+
+function licFormatDays(item) {
+  if (item.diasRestantes === null || item.diasRestantes === undefined) return '-';
+  if (item.diasRestantes < 0) return `vencido há ${Math.abs(item.diasRestantes)}d`;
+  return `${item.diasRestantes}d`;
+}
+
+function licInitials(nome) {
+  const names = String(nome || '?').trim().split(/\s+/);
+  const first = names[0]?.[0] || '?';
+  const last = names.length > 1 ? (names[names.length - 1]?.[0] || '') : '';
+  return (first + last).toUpperCase();
+}
+
+// ==========================================
+// ABA AVALIAÇÕES: quiz de Fundamentos de IA
+// ==========================================
+const avaliacoesSearch = document.getElementById('avaliacoesSearch');
+const avaliacoesSomenteBloqueados = document.getElementById('avaliacoesSomenteBloqueados');
+const avaliacoesRefreshBtn = document.getElementById('avaliacoesRefreshBtn');
+const avaliacoesPdfBtn = document.getElementById('avaliacoesPdfBtn');
+const avaliacoesCsvBtn = document.getElementById('avaliacoesCsvBtn');
+const avaliacoesStatus = document.getElementById('avaliacoesStatus');
+const avaliacoesTbody = document.getElementById('avaliacoesTbody');
+const avaliacoesDashboard = document.getElementById('avaliacoesDashboard');
+const avaliacoesArea = document.getElementById('avaliacoesArea');
+const avaliacoesAreaField = document.getElementById('avaliacoesAreaField');
+const avaliacoesChips = document.getElementById('avaliacoesPessoasChips');
+const avaliacoesSugestoes = document.getElementById('avaliacoesPessoasSugestoes');
+const avaliacoesPessoaBusca = document.getElementById('avaliacoesPessoaBusca');
+const avaliacoesPessoasLimpar = document.getElementById('avaliacoesPessoasLimpar');
+let avaliacoesItems = [];
+let avaliacoesRespostas = [];
+let avaliacoesLoaded = false;
+// Pessoas escolhidas (ids). Vazio = todas as pessoas do filtro de área.
+let pessoasSelecionadas = new Set();
+
+// Escopo da tela: área, pessoas escolhidas e só bloqueados. Indicadores, lista e relatório usam o mesmo escopo.
+function escopoAvaliacoes() {
+  return buildScope({ items: avaliacoesItems, respostas: avaliacoesRespostas }, {
+    area: avaliacoesArea?.value || null,
+    ids: pessoasSelecionadas,
+    onlyBlocked: Boolean(avaliacoesSomenteBloqueados?.checked),
+  });
+}
+
+function descricaoFiltros() {
+  const pessoas = pessoasSelecionadas.size ? `${pessoasSelecionadas.size} escolhida(s)` : 'todas';
+  const partes = [`Área: ${avaliacoesArea?.value || 'todas'}`, `Pessoas: ${pessoas}`];
+  if (avaliacoesSomenteBloqueados?.checked) partes.push('somente bloqueados ou esgotados');
+  return partes.join(' · ');
+}
+
+// Cartões e gráficos: sempre o escopo atual. Com uma pessoa só, a última carta mostra a evolução dela.
+function renderAvaliacoesDashboard() {
+  const escopo = escopoAvaliacoes();
+  const { kpis, modulos, faixas, porNumero, eventos, atividade, evolucao } = computeStats(escopo);
+  const pessoasNoEscopo = new Set(escopo.items.map((i) => i.alunoId));
+  const umaPessoa = pessoasNoEscopo.size === 1 ? escopo.items[0] : null;
+
+  const kpiHtml = kpiCardsFor(kpis, umaPessoa);
+
+  const aprovadas = porNumero.reduce((soma, p) => soma + p.aprovadas, 0);
+  const reprovadas = porNumero.reduce((soma, p) => soma + p.reprovadas, 0);
+
+  avaliacoesDashboard.innerHTML = `
+    <div class="avl-kpis">${kpiHtml}</div>
+    <div class="avl-grid">
+      <article class="avl-card">
+        <h3 class="avl-card__title">Desempenho por módulo</h3>
+        <p class="avl-card__sub">Acerto nas alternativas, do módulo mais fraco ao mais forte</p>
+        ${barRows(modulos.map((m) => ({ label: m.label, value: m.pct })), { suffix: '%', max: 100 })}
+      </article>
+      <article class="avl-card">
+        <h3 class="avl-card__title">Aprovação</h3>
+        <p class="avl-card__sub">Tentativas concluídas</p>
+        ${donutChart([
+    { key: 'aprovadas', label: 'Aprovadas', value: aprovadas, color: COLORS.success },
+    { key: 'reprovadas', label: 'Reprovadas', value: reprovadas, color: COLORS.coral },
+  ])}
+      </article>
+      <article class="avl-card">
+        <h3 class="avl-card__title">Distribuição de notas</h3>
+        <p class="avl-card__sub">Notas das tentativas concluídas, de 0 a 10</p>
+        ${columnChart(faixas, { color: COLORS.graphite })}
+      </article>
+      <article class="avl-card">
+        <h3 class="avl-card__title">Sinais de integridade</h3>
+        <p class="avl-card__sub">Eventos registrados durante a prova</p>
+        ${barRows(eventos, { color: COLORS.coral })}
+      </article>
+      <article class="avl-card avl-card--wide">
+        <h3 class="avl-card__title">${umaPessoa ? `Evolução de ${escapeHtml(umaPessoa.nome)}` : 'Atividade por dia'}</h3>
+        <p class="avl-card__sub">${umaPessoa ? 'Nota de cada tentativa concluída. A linha tracejada marca a aprovação.' : 'Tentativas iniciadas em cada dia'}</p>
+        ${umaPessoa ? lineChart(evolucao) : columnChart(atividade, { color: COLORS.graphite })}
+      </article>
+      <article class="avl-card">
+        <h3 class="avl-card__title">Aprovações por tentativa</h3>
+        <p class="avl-card__sub">Quantas pessoas passaram em cada número de tentativa</p>
+        ${columnChart(porNumero.map((p) => ({ label: p.label, value: p.aprovadas })), { color: COLORS.success })}
+      </article>
+    </div>`;
+}
+
+// Gestor vê só as pessoas do time dele e não tem filtro de área; a educação filtra por área e por pessoa.
+function atualizarFiltrosAvaliacoes() {
+  const areas = [...new Set(avaliacoesItems.map((i) => i.area).filter(Boolean))].sort();
+  const areaAtual = avaliacoesArea.value;
+  avaliacoesArea.innerHTML = '<option value="">Todas as áreas</option>'
+    + areas.map((a) => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+  avaliacoesArea.value = areaAtual;
+  if (avaliacoesAreaField) avaliacoesAreaField.hidden = currentUserRole === 'gestor';
+  if (avaliacoesCsvBtn) avaliacoesCsvBtn.hidden = !podeLiberar();
+
+  // Mantém só as pessoas escolhidas que continuam dentro da área atual.
+  const visiveis = new Set(pessoasDaArea().map((i) => i.alunoId));
+  pessoasSelecionadas = new Set([...pessoasSelecionadas].filter((id) => visiveis.has(id)));
+  renderChips();
+  renderSugestoes();
+}
+
+// Pessoas que podem ser escolhidas: uma entrada por pessoa, dentro da área do filtro.
+function pessoasDaArea() {
+  const area = avaliacoesArea?.value || null;
+  const porPessoa = new Map();
+  for (const i of avaliacoesItems) {
+    if (area && i.area !== area) continue;
+    if (!porPessoa.has(i.alunoId)) porPessoa.set(i.alunoId, i);
+  }
+  return [...porPessoa.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+
+function nomeDaPessoa(id) {
+  return avaliacoesItems.find((i) => i.alunoId === id)?.nome || 'Pessoa';
+}
+
+// Chips: cada pessoa escolhida aparece como etiqueta, com × para tirar do filtro.
+function renderChips() {
+  avaliacoesChips.innerHTML = [...pessoasSelecionadas]
+    .map((id) => `<span class="avl-chip">${escapeHtml(nomeDaPessoa(id))}<button type="button" class="avl-chip__remover" data-remover-pessoa="${id}" aria-label="Remover ${escapeHtml(nomeDaPessoa(id))}">×</button></span>`)
+    .join('');
+  avaliacoesPessoasLimpar.hidden = pessoasSelecionadas.size === 0;
+}
+
+// Sugestões: abrem ao focar ou digitar. Quem já está nos chips não aparece de novo.
+function renderSugestoes() {
+  const busca = (avaliacoesPessoaBusca.value || '').trim().toLowerCase();
+  const sugestoes = pessoasDaArea()
+    .filter((i) => !pessoasSelecionadas.has(i.alunoId))
+    .filter((i) => !busca || `${i.nome} ${i.email}`.toLowerCase().includes(busca))
+    .slice(0, 8);
+  avaliacoesSugestoes.innerHTML = sugestoes.length
+    ? sugestoes.map((i) => `
+      <li><button type="button" class="avl-suggest__item" data-escolher-pessoa="${i.alunoId}">
+        <span>${escapeHtml(i.nome)}</span><small>${escapeHtml([i.cargo, i.area].filter(Boolean).join(' · ') || 'sem área')}</small>
+      </button></li>`).join('')
+    : `<li class="avl-suggest__vazio">${busca ? 'Nenhuma pessoa encontrada.' : 'Digite um nome para buscar.'}</li>`;
+}
+
+// Abre a lista só quando o usuário está no campo (foco ou digitação). Atualizações da tela não abrem sozinhas.
+function abrirSugestoes() {
+  renderSugestoes();
+  avaliacoesSugestoes.hidden = false;
+}
+
+function fecharSugestoes() {
+  avaliacoesSugestoes.hidden = true;
+}
+
+function escolherPessoa(id) {
+  pessoasSelecionadas.add(id);
+  avaliacoesPessoaBusca.value = '';
+  renderChips();
+  renderSugestoes();
+  atualizarTudo();
+}
+
+function removerPessoa(id) {
+  pessoasSelecionadas.delete(id);
+  renderChips();
+  renderSugestoes();
+  atualizarTudo();
+}
+
+// Liberar é exclusivo da educação (quem tem avaliacoes:write). O gestor só visualiza.
+function podeLiberar() {
+  return currentUserRole !== 'gestor';
+}
+
+function formatAvaliacaoData(iso) {
+  return iso ? new Date(iso).toLocaleString('pt-BR') : '-';
+}
+
+function situacaoAvaliacao(item) {
+  if (item.situacao === 'bloqueado') return `<strong>Bloqueado</strong><br><small>desde ${escapeHtml(formatAvaliacaoData(item.bloqueadoEm))}</small>`;
+  if (item.situacao === 'esgotado') return '<strong>Tentativas esgotadas</strong><br><small>precisa de liberação</small>';
+  if (item.liberadoEm) return `Ativo<br><small>liberado em ${escapeHtml(formatAvaliacaoData(item.liberadoEm))}</small>`;
+  return 'Ativo';
+}
+
+function resultadoTentativa(t) {
+  const resultado = t.aprovado === true ? 'aprovado' : t.aprovado === false ? 'reprovado' : 'em andamento';
+  const partes = [`#${t.numero}: nota ${t.nota ?? '-'} (${resultado})`];
+  if (t.duracaoMin !== null) partes.push(`${t.duracaoMin} min`);
+  if (t.eventos) partes.push(`${t.eventos} evento(s) de integridade`);
+  return escapeHtml(partes.join(' · '));
+}
+
+function avaliacaoRowHtml(item) {
+  const tentativas = item.tentativas.map(resultadoTentativa).join('<br>') || 'nenhuma';
+  // Esgotado e ativo: pode bloquear. Bloqueado: pode liberar. Só a educação vê esses botões.
+  let acao = '';
+  if (podeLiberar()) {
+    if (item.situacao === 'esgotado') {
+      acao = `<button type="button" class="btn-secondary-outline" data-bloquear-aluno="${item.alunoId}" data-bloquear-curso="${item.courseId}">Bloquear</button>`;
+    } else if (item.situacao === 'bloqueado') {
+      acao = `<button type="button" class="btn-coral" data-liberar-aluno="${item.alunoId}" data-liberar-curso="${item.courseId}">Liberar</button>`;
+    }
+  }
+  return `<tr>
+    <td><strong>${escapeHtml(item.nome)}</strong>${item.cargo ? `<br><small>${escapeHtml(item.cargo)}</small>` : ''}<br><small>${escapeHtml(item.email)}</small></td>
+    <td>${escapeHtml(item.courseId)}</td>
+    <td>${item.usadas} de ${item.maxTentativas} usadas<br><small>${tentativas}</small></td>
+    <td>${item.ultimaNota ?? '-'}</td>
+    <td>${situacaoAvaliacao(item)}${item.liberadoPor ? `<br><small>por ${escapeHtml(item.liberadoPor)}</small>` : ''}</td>
+    <td>${acao}</td>
+  </tr>`;
+}
+
+function renderAvaliacoes() {
+  const term = (avaliacoesSearch?.value || '').trim().toLowerCase();
+  const rows = escopoAvaliacoes().items.filter((item) => !term || `${item.nome} ${item.email}`.toLowerCase().includes(term));
+  avaliacoesTbody.innerHTML = rows.length
+    ? rows.map(avaliacaoRowHtml).join('')
+    : '<tr><td colspan="6">Nenhum aluno encontrado.</td></tr>';
+  avaliacoesStatus.textContent = `${rows.length} de ${avaliacoesItems.length} matrículas`;
+}
+
+function atualizarTudo() {
+  renderAvaliacoesDashboard();
+  renderAvaliacoes();
+}
+
+async function ensureAvaliacoesLoaded(force = false) {
+  if (avaliacoesLoaded && !force) return atualizarTudo();
+  avaliacoesStatus.textContent = 'Carregando...';
+  try {
+    const res = await fetch('/api/licenses?view=avaliacoes');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Falha ao carregar avaliações.');
+    avaliacoesItems = data.items;
+    avaliacoesRespostas = data.respostas;
+    avaliacoesLoaded = true;
+    atualizarFiltrosAvaliacoes();
+    atualizarTudo();
+  } catch (error) {
+    avaliacoesStatus.textContent = error.message;
+  }
+}
+
+// Relatório PDF: o que está filtrado na tela, em páginas A4 com margens seguras (mesmo padrão dos outros PDFs do sistema).
+async function gerarRelatorioPdf() {
+  const escopo = escopoAvaliacoes();
+  if (escopo.items.length === 0) {
+    avaliacoesStatus.textContent = 'Nenhuma pessoa com o filtro atual. Ajuste os filtros antes de gerar o relatório.';
+    return;
+  }
+  const original = avaliacoesPdfBtn.innerHTML;
+  avaliacoesPdfBtn.disabled = true;
+  avaliacoesPdfBtn.textContent = 'Gerando PDF...';
+
+  // Palco fora da tela: as páginas são montadas aqui, capturadas e descartadas.
+  const palco = document.createElement('div');
+  palco.id = 'avaliacoesReportHost';
+  palco.style.cssText = 'position:fixed;left:-10000px;top:0;background:#ffffff;';
+  document.body.appendChild(palco);
+
+  try {
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf'),
+    ]);
+    palco.innerHTML = reportPages({
+      scope: escopo,
+      filtros: descricaoFiltros(),
+      geradoEm: new Date().toLocaleString('pt-BR'),
+    }).join('');
+    await document.fonts?.ready;
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+    const paginas = palco.querySelectorAll('.avl-rel-page');
+    for (let indice = 0; indice < paginas.length; indice += 1) {
+      const canvas = await html2canvas(paginas[indice], { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+      if (indice > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+    }
+    pdf.save(`relatorio-avaliacoes-${new Date().toISOString().slice(0, 10)}.pdf`);
+  } catch {
+    avaliacoesStatus.textContent = 'Não foi possível gerar o PDF. Tente novamente.';
+  } finally {
+    palco.remove();
+    avaliacoesPdfBtn.disabled = false;
+    avaliacoesPdfBtn.innerHTML = original;
+  }
+}
+
+// CSV do escopo atual (só a educação). Separador ";" e BOM, para o Excel abrir com acentos certos.
+function exportarCsv() {
+  const escopo = escopoAvaliacoes();
+  if (escopo.items.length === 0) {
+    avaliacoesStatus.textContent = 'Nenhuma pessoa com o filtro atual. Ajuste os filtros antes de exportar.';
+    return;
+  }
+  const blob = new Blob(['﻿' + buildCsv(escopo.items)], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `avaliacoes-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+avaliacoesTbody?.addEventListener('click', async (event) => {
+  const btn = event.target.closest('[data-liberar-aluno], [data-bloquear-aluno]');
+  if (!btn) return;
+  const bloquear = btn.hasAttribute('data-bloquear-aluno');
+  const alunoId = Number(bloquear ? btn.dataset.bloquearAluno : btn.dataset.liberarAluno);
+  const courseId = Number(bloquear ? btn.dataset.bloquearCurso : btn.dataset.liberarCurso);
+  const item = avaliacoesItems.find((i) => i.alunoId === alunoId && i.courseId === courseId);
+  const nome = item?.nome || 'o aluno';
+  const confirmado = window.confirm(bloquear
+    ? `Bloquear ${nome} no curso? O acesso é removido na Hotscool e ela só volta com a liberação.`
+    : `Liberar ${nome} para refazer a avaliação? As tentativas passam a contar a partir de agora.`);
+  if (!confirmado) return;
+
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/licenses?view=avaliacoes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alunoId, courseId, acao: bloquear ? 'bloquear' : 'liberar' }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Falha ao atualizar o aluno.');
+    avaliacoesStatus.textContent = bloquear ? 'Aluno bloqueado.' : 'Aluno liberado.';
+    await ensureAvaliacoesLoaded(true);
+  } catch (error) {
+    btn.disabled = false;
+    avaliacoesStatus.textContent = error.message;
+  }
+});
+
+avaliacoesArea?.addEventListener('change', () => {
+  atualizarFiltrosAvaliacoes();
+  atualizarTudo();
+});
+avaliacoesPessoaBusca?.addEventListener('focus', abrirSugestoes);
+avaliacoesPessoaBusca?.addEventListener('input', abrirSugestoes);
+// Fecha a lista ao sair do campo, com um pequeno atraso para o clique numa sugestão ainda funcionar.
+avaliacoesPessoaBusca?.addEventListener('blur', () => setTimeout(fecharSugestoes, 150));
+// mousedown (e não click) para a escolha acontecer antes do campo perder o foco.
+avaliacoesSugestoes?.addEventListener('mousedown', (event) => {
+  const botao = event.target.closest('[data-escolher-pessoa]');
+  if (!botao) return;
+  event.preventDefault();
+  escolherPessoa(Number(botao.dataset.escolherPessoa));
+});
+avaliacoesChips?.addEventListener('click', (event) => {
+  const botao = event.target.closest('[data-remover-pessoa]');
+  if (botao) removerPessoa(Number(botao.dataset.removerPessoa));
+});
+avaliacoesPessoasLimpar?.addEventListener('click', () => {
+  pessoasSelecionadas.clear();
+  renderChips();
+  renderSugestoes();
+  atualizarTudo();
+});
+avaliacoesSomenteBloqueados?.addEventListener('change', atualizarTudo);
+avaliacoesSearch?.addEventListener('input', renderAvaliacoes);
+avaliacoesRefreshBtn?.addEventListener('click', () => ensureAvaliacoesLoaded(true));
+avaliacoesPdfBtn?.addEventListener('click', gerarRelatorioPdf);
+avaliacoesCsvBtn?.addEventListener('click', exportarCsv);
+
+function renderLicenses() {
+  if (!licData) return;
+  const t = licData.total;
+  const setText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+  const licUsuarios = t.usuariosAtivos ?? 0;
+  const licLivres = t.teto > 0 ? t.teto - licUsuarios : null;
+  setText('licKpiTeto', t.teto > 0 ? `${t.usoPercentual}%` : '-');
+  setText('licKpiTetoSub', t.teto > 0
+    ? (licLivres < 0
+      ? `${licUsuarios}/${t.teto} em uso • ${Math.abs(licLivres)} acima do teto`
+      : `${licUsuarios}/${t.teto} em uso • ${licLivres} livres`)
+    : 'configure HOTSCOOL_MAX_ACTIVE_ENROLLMENTS no .env');
+  setText('licKpiRisco', String(t.emRisco));
+  setText('licKpiBloqueadas', String(t.bloqueadas));
+  setText('licKpiBloqueadasSub', `${t.desconhecidas} sem status`);
+  setText('licKpiSemMat', String(t.semMatricula ?? 0));
+
+  const licSchoolsRow = document.getElementById('licSchoolsRow');
+  if (licSchoolsRow) {
+    licSchoolsRow.innerHTML = licData.schools.map((s) => `
+      <div class="kpi-card">
+        <div class="kpi-icon purple">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">${escapeHtml(s.name)}</span>
+          <span class="kpi-value">${s.usuariosAtivos ?? 0} usuários</span>
+          <span class="kpi-sub">${s.ativas} matrículas ativas • ${s.bloqueadas} bloqueadas • ${s.emRisco} em risco (${s.usuariosTrilha ?? 0} só trilha) • ${s.semMatricula ?? 0} não matriculados</span>
+        </div>
+      </div>`).join('');
+  }
+
+  if (licSchoolSelect && licSchoolSelect.options.length === 0) {
+    licSchoolSelect.innerHTML = '<option value="all">Todas as escolas</option>'
+      + licData.schools.map((s) => `<option value="${Number(s.id)}">${escapeHtml(s.name)} (${s.usuariosAtivos ?? 0} usuários)</option>`).join('');
+  }
+  if (licMeta) {
+    const when = licData.cachedAt ? new Date(licData.cachedAt).toLocaleString('pt-BR') : '-';
+    licMeta.textContent = `Sincronizado em ${when} • janela de ${licData.windowDays} dias • * dia do cadastro no banco`;
+  }
+
+  const isNone = licRiskVal === 'none';
+  const rows = isNone ? licFilteredUnenrolled() : licFilteredItems();
+  if (licData) {
+    const items = licData.items;
+    const chipCount = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = String(n); };
+    chipCount('licCountAll', items.length);
+    chipCount('licCountRisk', items.filter((i) => i.emRisco).length);
+    chipCount('licCountActive', items.filter((i) => i.acessoAtivo === true).length);
+    chipCount('licCountBlocked', items.filter((i) => i.acessoAtivo === false).length);
+    chipCount('licCountNone', (licData.unenrolled || []).length);
+  }
+  if (licSelectAll) licSelectAll.disabled = isNone;
+  const pageSize = licPageSizeVal;
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  if (licPage > totalPages) licPage = totalPages;
+  const pageRows = rows.slice((licPage - 1) * pageSize, licPage * pageSize);
+  const renderPageStatus = (list) => {
+    if (!licPagination) return;
+    if (!list.length) { licPagination.innerHTML = ''; return; }
+    const from = (licPage - 1) * pageSize + 1;
+    const to = Math.min(licPage * pageSize, list.length);
+    licPagination.innerHTML = `
+      <button type="button" class="btn-ghost-sm" data-lic-page="prev" ${licPage <= 1 ? 'disabled' : ''} aria-label="Página anterior">‹</button>
+      <span style="font-size:13px;">${from}–${to} de ${list.length}</span>
+      <button type="button" class="btn-ghost-sm" data-lic-page="next" ${licPage >= totalPages ? 'disabled' : ''} aria-label="Próxima página">›</button>`;
+  };
+  if (!rows.length) {
+    licTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;">Nenhum registro para os filtros.</td></tr>';
+    renderPageStatus(rows);
+  } else if (isNone) {
+    licTableBody.innerHTML = rows.slice(0, 500).map((person) => `
+      <tr>
+        <td><input type="checkbox" disabled aria-label="Sem ação disponível"></td>
+        <td><div class="student-cell"><div class="student-avatar">${escapeHtml(licInitials(person.nome))}</div><div><div class="student-name">${escapeHtml(person.nome)}</div><div style="font-size:11px;color:var(--graphite-muted)">${escapeHtml(person.email)}</div></div></div></td>
+        <td style="color:var(--graphite-muted)">—</td>
+        <td>${escapeHtml(person.escola)}</td>
+        <td>${licFormatDate(person.dataCadastro, false)}</td>
+        <td>—</td>
+        <td><span class="status-pill info">Não matriculado</span></td>
+      </tr>`).join('');
+    renderPageStatus(rows);
+  } else {
+    licTableBody.innerHTML = pageRows.map((item) => {
+      const key = licRowKey(item);
+      const checked = licSelected.has(key) ? 'checked' : '';
+      const pill = item.emRisco
+        ? '<span class="status-pill error">Em risco</span>'
+        : item.acessoAtivo === true
+          ? '<span class="status-pill success">Ativo</span>'
+          : item.acessoAtivo === false
+            ? '<span class="status-pill error">Bloqueado</span>'
+            : '<span class="status-pill info">Desconhecido</span>';
+      return `<tr>
+        <td><input type="checkbox" data-lic-check="${escapeHtml(key)}" ${checked} aria-label="Selecionar matrícula"></td>
+        <td><div class="student-cell"><div class="student-avatar">${escapeHtml(licInitials(item.nome))}</div><div><div class="student-name">${escapeHtml(item.nome)}</div><div style="font-size:11px;color:var(--graphite-muted)">${escapeHtml(item.email)}</div></div></div></td>
+        <td>${escapeHtml(item.titulo)}</td>
+        <td>${escapeHtml(item.escola)}</td>
+        <td>${licFormatDate(item.dataMatricula, item.estimado)}</td>
+        <td>${licFormatDays(item)}</td>
+        <td>${pill}</td>
+      </tr>`;
+    }).join('');
+    renderPageStatus(rows);
+  }
+  updateLicSelectionUi(isNone ? [] : pageRows);
+}
+
+const LIC_SKELETON_IDS = ['licKpiTeto', 'licKpiRisco', 'licKpiBloqueadas', 'licKpiSemMat'];
+
+function showLicSkeletons(statusText) {
+  for (const id of LIC_SKELETON_IDS) document.getElementById(id)?.classList.add('skel');
+  if (licSchoolsRow) {
+    licSchoolsRow.innerHTML = [1, 2, 3].map(() => `
+      <div class="kpi-card"><div class="kpi-data">
+        <span class="kpi-label skel">Escola</span>
+        <span class="kpi-value skel">000 usuários</span>
+        <span class="kpi-sub skel">carregando…</span>
+      </div></div>`).join('');
+  }
+  if (licTableBody) {
+    licTableBody.innerHTML = Array.from({ length: 8 }).map(() => `
+      <tr class="skel-row">
+        <td><span class="skel" style="width:16px;height:16px;">&nbsp;</span></td>
+        <td><span class="skel" style="width:180px;">&nbsp;</span></td>
+        <td><span class="skel" style="width:140px;">&nbsp;</span></td>
+        <td><span class="skel" style="width:120px;">&nbsp;</span></td>
+        <td><span class="skel" style="width:80px;">&nbsp;</span></td>
+        <td><span class="skel" style="width:60px;">&nbsp;</span></td>
+        <td><span class="skel" style="width:90px;">&nbsp;</span></td>
+      </tr>`).join('');
+  }
+  if (licMeta && statusText) licMeta.textContent = statusText;
+}
+
+function clearLicSkeletons() {
+  for (const id of LIC_SKELETON_IDS) document.getElementById(id)?.classList.remove('skel');
+}
+
+function mergeLicSchoolData(acc, incoming) {
+  if (!incoming || !Array.isArray(incoming.schools)) return acc;
+  acc.windowDays = incoming.windowDays || acc.windowDays;
+  acc.cachedAt = new Date().toISOString();
+  acc.schools.push(...incoming.schools);
+  acc.items.push(...(incoming.items || []));
+  acc.unenrolled.push(...(incoming.unenrolled || []));
+  const sum = (pick) => acc.schools.reduce((n, s) => n + (s[pick] || 0), 0);
+  const emails = (onlyActive) => new Set(
+    acc.items.filter((i) => !onlyActive || i.acessoAtivo === true).map((i) => i.email)
+  );
+  acc.total = {
+    teto: incoming.total?.teto ?? acc.total.teto,
+    totalMatriculas: sum('totalMatriculas'),
+    ativas: sum('ativas'),
+    bloqueadas: sum('bloqueadas'),
+    desconhecidas: sum('desconhecidas'),
+    emRisco: sum('emRisco'),
+    semMatricula: sum('semMatricula'),
+    usuariosAtivos: emails(true).size,
+    usuariosTrilha: sum('usuariosTrilha'),
+    usuariosTotal: emails(false).size,
+  };
+  const t = acc.total;
+  t.livres = t.teto > 0 ? t.teto - t.usuariosAtivos : null;
+  t.usoPercentual = t.teto > 0 ? Math.round((t.usuariosAtivos / t.teto) * 100) : null;
+  return acc;
+}
+
+function blankLicData() {
+  return {
+    windowDays: 30, cachedAt: null, schools: [], items: [], unenrolled: [],
+    total: { teto: 0, totalMatriculas: 0, ativas: 0, bloqueadas: 0, desconhecidas: 0, emRisco: 0, semMatricula: 0, usuariosAtivos: 0, usuariosTrilha: 0, usuariosTotal: 0, livres: null, usoPercentual: null },
+  };
+}
+
+async function ensureLicensesLoaded(force = false) {
+  if (licLoading || (licLoaded && !force)) return;
+  licLoading = true;
+  if (licError) licError.style.display = 'none';
+  if (licBatchFeedback) licBatchFeedback.style.display = 'none';
+  try {
+    // 1) Lista de escolas (rápido, vem do cache de nomes).
+    const resSchools = await fetch('/api/courses');
+    const schoolsJson = await resSchools.json().catch(() => ({}));
+    if (!resSchools.ok) throw new Error(schoolsJson.error || 'Falha ao listar escolas.');
+    const schoolList = Array.isArray(schoolsJson.schools) ? schoolsJson.schools : [];
+    if (!schoolList.length) throw new Error('Nenhuma escola encontrada.');
+    if (licSchoolSelect) {
+      const keep = licSchoolSelect.value || 'all';
+      licSchoolSelect.innerHTML = '<option value="all">Todas as escolas</option>'
+        + schoolList.map((s) => `<option value="${Number(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+      licSchoolSelect.value = keep;
+    }
+    // 2) Uma request por escola em paralelo; cada chegada já renderiza.
+    licData = blankLicData();
+    licPage = 1;
+    let done = 0;
+    const failures = [];
+    showLicSkeletons(`Localizando escolas… (0/${schoolList.length})`);
+    renderLicenses();
+    await Promise.all(schoolList.map(async (s) => {
+      try {
+        const res = await fetch(`/api/licenses?schoolIndex=${Number(s.id)}${force ? '&refresh=true' : ''}`);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        mergeLicSchoolData(licData, data);
+      } catch (err) {
+        failures.push(`${s.name}: ${err.message}`);
+      } finally {
+        done += 1;
+        clearLicSkeletons();
+        renderLicenses();
+        if (licMeta) {
+          const when = licData.cachedAt ? new Date(licData.cachedAt).toLocaleString('pt-BR') : '-';
+          licMeta.textContent = done < schoolList.length
+            ? `Carregando ${done}/${schoolList.length} escolas… • janela de ${licData.windowDays} dias`
+            : `Sincronizado em ${when} • janela de ${licData.windowDays} dias • * data estimada`;
+        }
+      }
+    }));
+    licLoaded = true;
+    if (failures.length) throw new Error(`Falha em ${failures.length} escola(s): ${failures.join(' | ')}`);
+  } catch (err) {
+    if (licError) {
+      licError.textContent = err.message;
+      licError.style.display = 'block';
+    }
+  } finally {
+    licLoading = false;
+  }
+}
+
+function updateLicSelectionUi(visibleRows) {
+  const rows = visibleRows ?? licFilteredItems();
+  for (const key of Array.from(licSelected)) {
+    if (!licData?.items.some((i) => licRowKey(i) === key)) licSelected.delete(key);
+  }
+  const selectedVisible = rows.filter((i) => licSelected.has(licRowKey(i))).length;
+  if (licSelectAll && !licSelectAll.disabled) {
+    licSelectAll.checked = rows.length > 0 && selectedVisible === rows.length;
+    licSelectAll.indeterminate = selectedVisible > 0 && selectedVisible < rows.length;
+  }
+  if (licSelectedCount) {
+    licSelectedCount.textContent = licSelected.size === 0
+      ? 'Nenhuma matrícula selecionada'
+      : `${licSelected.size} matrícula${licSelected.size === 1 ? '' : 's'} selecionada${licSelected.size === 1 ? '' : 's'}`;
+  }
+  const showBar = licCanWrite();
+  if (licBatchRenew) licBatchRenew.style.display = showBar ? '' : 'none';
+  if (licBatchWithdraw) licBatchWithdraw.style.display = showBar ? '' : 'none';
+}
+
+function handleLicCheck(event) {
+  const box = event.target?.closest?.('[data-lic-check]');
+  if (!box || !licTableBody.contains(box)) return;
+  if (box.checked) licSelected.add(box.dataset.licCheck);
+  else licSelected.delete(box.dataset.licCheck);
+  updateLicSelectionUi();
+}
+
+function licSelectedItems() {
+  if (!licData) return [];
+  return licData.items.filter((i) => licSelected.has(licRowKey(i)));
+}
+
+function showLicBatchFeedback(type, message) {
+  if (!licBatchFeedback) return;
+  licBatchFeedback.className = `feedback-box ${type}`;
+  licBatchFeedback.innerHTML = message;
+  licBatchFeedback.style.display = 'block';
+}
+
+async function runLicBatch(action) {
+  const targets = licSelectedItems();
+  if (!targets.length) {
+    showLicBatchFeedback('error', 'Selecione ao menos uma matrícula na tabela.');
+    return;
+  }
+  const verb = action === 'withdraw' ? 'Desmatricular' : 'Renovar (+30 dias)';
+  if (!confirm(`${verb} ${targets.length} matrícula(s) selecionada(s)?`)) return;
+  const btn = action === 'withdraw' ? licBatchWithdraw : licBatchRenew;
+  const originalText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; }
+  let ok = 0;
+  const failures = [];
+  for (let idx = 0; idx < targets.length; idx++) {
+    const item = targets[idx];
+    if (btn) btn.textContent = `${verb} ${idx + 1}/${targets.length}…`;
+    try {
+      const res = await fetch('/api/student', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          email: item.email,
+          id_curso: Number(item.courseId),
+          schoolId: Number(item.schoolId),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      ok += 1;
+      licSelected.delete(licRowKey(item));
+    } catch (err) {
+      failures.push(`${item.email} / ${item.titulo}: ${err.message}`);
+    }
+  }
+  if (btn) { btn.disabled = false; btn.textContent = originalText; }
+  showLicBatchFeedback(
+    failures.length === 0 ? 'success' : 'error',
+    `<strong>${ok} de ${targets.length} concluída(s).</strong>`
+    + (failures.length ? `<ul style="margin:8px 0 8px 20px;font-size:13px;">${failures.slice(0, 10).map((f) => `<li>${escapeHtml(f)}</li>`).join('')}</ul>` : '')
+  );
+  await ensureLicensesLoaded(true);
+}
+
+function exportLicensesCsv() {
+  const header = ['aluno', 'email', 'curso', 'escola', 'matricula_em', 'data_estimada', 'dias_restantes', 'status', 'em_risco'];
+  const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const brDate = (iso) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '');
+  let lines;
+  let filename = 'licencas_riscos.csv';
+  if (licRiskVal === 'none') {
+    lines = [header.join(';')].concat(licFilteredUnenrolled().map((p) => [
+      cell(p.nome), p.email, '-', cell(p.escola), brDate(p.dataCadastro), '', '', 'nao_matriculado', '',
+    ].join(';')));
+    filename = 'usuarios_nao_matriculados.csv';
+  } else {
+    lines = [header.join(';')].concat(licFilteredItems().map((i) => [
+      cell(i.nome), i.email, cell(i.titulo), cell(i.escola), brDate(i.dataMatricula),
+      i.estimado ? 'sim' : 'nao', i.diasRestantes ?? '', i.statusMatricula, i.emRisco ? 'sim' : 'nao',
+    ].join(';')));
+  }
+  const blob = new Blob([String.fromCharCode(0xFEFF) + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function licCurrentPageRows() {
+  if (licRiskVal === 'none') return [];
+  const rows = licFilteredItems();
+  return rows.slice((licPage - 1) * licPageSizeVal, licPage * licPageSizeVal);
+}
+
+licSchoolSelect?.addEventListener('change', () => { licPage = 1; renderLicenses(); });
+licChips?.addEventListener('click', (event) => {
+  const chip = event.target?.closest?.('[data-lic-filter]');
+  if (!chip) return;
+  licRiskVal = chip.dataset.licFilter;
+  licPage = 1;
+  licChips.querySelectorAll('.filter-chip').forEach((c) => c.classList.toggle('active', c === chip));
+  renderLicenses();
+});
+licSearchInput?.addEventListener('input', () => { licPage = 1; renderLicenses(); });
+licPageSize?.addEventListener('change', () => {
+  licPageSizeVal = Number(licPageSize.value) || 20;
+  licPage = 1;
+  renderLicenses();
+});
+licPagination?.addEventListener('click', (event) => {
+  const btn = event.target?.closest?.('[data-lic-page]');
+  if (!btn || btn.disabled) return;
+  licPage += btn.dataset.licPage === 'next' ? 1 : -1;
+  renderLicenses();
+});
+licRefreshBtn?.addEventListener('click', () => ensureLicensesLoaded(true));
+licExportBtn?.addEventListener('click', exportLicensesCsv);
+licTableBody?.addEventListener('change', handleLicCheck);
+licSelectAll?.addEventListener('change', () => {
+  const rows = licCurrentPageRows();
+  if (licSelectAll.checked) rows.forEach((i) => licSelected.add(licRowKey(i)));
+  else rows.forEach((i) => licSelected.delete(licRowKey(i)));
+  renderLicenses();
+});
+licBatchRenew?.addEventListener('click', () => runLicBatch('reactivate'));
+licBatchWithdraw?.addEventListener('click', () => runLicBatch('withdraw'));

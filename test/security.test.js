@@ -24,13 +24,31 @@ function responseMock() {
   };
 }
 
+test('gestor só vê Avaliações em leitura e restrito às áreas; sem áreas, não entra', () => {
+  process.env.AUTHORIZATION_POLICY = JSON.stringify({
+    'gestor@example.com': { role: 'gestor', schools: [0], areas: ['Financeiro'] },
+    'sem-area@example.com': { role: 'gestor', schools: [0] },
+  });
+  const gestor = getAuthorization('gestor@example.com');
+  assert.deepEqual(gestor.permissions, ['avaliacoes:read']);
+  assert.deepEqual(gestor.areas, ['Financeiro']);
+  assert.equal(getAuthorization('sem-area@example.com'), null);
+});
+
+test('educação sem áreas na policy vê todas as áreas', () => {
+  process.env.AUTHORIZATION_POLICY = JSON.stringify({
+    'educacao@example.com': { role: 'operator', schools: [0] },
+  });
+  assert.equal(getAuthorization('educacao@example.com').areas, null);
+});
+
 test('authorization policy is default-deny and scopes schools', () => {
   process.env.AUTHORIZATION_POLICY = JSON.stringify({
     'viewer@example.com': { role: 'viewer', schools: [0, 2] },
   });
 
   assert.equal(getAuthorization('unknown@example.com'), null);
-  assert.deepEqual(getAuthorization('VIEWER@example.com').permissions, ['courses:read', 'students:read']);
+  assert.deepEqual(getAuthorization('VIEWER@example.com').permissions, ['courses:read', 'students:read', 'avaliacoes:read']);
   process.env.AUTHORIZATION_POLICY = JSON.stringify({
     'operator@example.com': { role: 'operator', schools: [0] },
   });

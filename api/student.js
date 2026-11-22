@@ -4,13 +4,16 @@ import {
   fetchPackagesFromSchool,
   fetchStudentsFromSchool,
   fetchWithTimeout,
+  findStudentInSchool,
   getSchools,
   hotscoolConcurrency,
   invalidateSchoolCache,
   mapWithConcurrency,
+  matchStudentEmail,
 } from './hotscool.js';
 import { randomBytes } from 'node:crypto';
 import { filterAuthorizedSchools, requirePermission } from './auth-utils.js';
+import { recordEnrollment } from './enrollment-log.js';
 import { applyRateLimit, requireTrustedGetRequest, requireTrustedJsonRequest } from './security.js';
 
 const HOTSCOOL_STUDENT_PORTAL_URL = process.env.HOTSCOOL_STUDENT_PORTAL_URL || 'https://app.hotscool.com';
@@ -24,6 +27,101 @@ function getAccessLimitDates(days = DEFAULT_ACCESS_DAYS) {
   const data_expiracao = `${pad(limit.getDate())}/${pad(limit.getMonth() + 1)}/${limit.getFullYear()}`;
   const data_compra = `${pad(new Date().getDate())}/${pad(new Date().getMonth() + 1)}/${new Date().getFullYear()}`;
   return { data_limite, data_expiracao, data_compra };
+}
+
+// Corpo de renovação do limite de acesso para o PUT /students/access.
+// Devolve null quando o limite está desativado (HOTSCOOL_DEFAULT_ACCESS_DAYS<=0).
+function getAccessRenewalBody() {
+  if (!(DEFAULT_ACCESS_DAYS > 0)) return null;
+  const { data_limite, data_expiracao } = getAccessLimitDates();
+  return { data_limite, data_expiracao };
+}
+
+// Reativa o acesso ao curso renovando o limite (data_limite/data_expiracao
+// a partir de hoje). Se a Hotscool rejeitar os campos no PUT (400 citando
+// data_limite), repete sem corpo — mesmo padrão de fallback do enrollment.
+async function putStudentAccess(apiKey, studentId, courseId) {
+  const url = `${HOTSCOOL_API_URL}/students/access/${studentId}/${courseId}/1`;
+  const headers = {
+    'x-access-token': apiKey,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+  const renewal = getAccessRenewalBody();
+  let accessRes = await fetchWithTimeout(url, {
+    method: 'PUT',
+    headers,
+    ...(renewal ? { body: JSON.stringify(renewal) } : {}),
+  });
+  let accessData = await accessRes.json().catch(() => ({}));
+  if (!accessRes.ok && accessRes.status === 400 && renewal
+    && JSON.stringify(accessData).toLowerCase().includes('data_limite')) {
+    accessRes = await fetchWithTimeout(url, { method: 'PUT', headers });
+    accessData = await accessRes.json().catch(() => ({}));
+  }
+  return { accessRes, accessData };
+}
+
+// Desbloqueio em nível de aluno (coluna "Matrícula" do painel Hotscool:
+// "Assinatura expirada" x "Ativa"). status 1=active, 2=blocked.
+// Ao contrário do PUT /students/access (por curso), este endpoint aceita as
+// chaves atuais — é o que o cadeado "Bloquear/Desbloquear Matrícula" faz.
+async function putStudentBlockAccess(apiKey, studentId, status) {
+  const res = await fetchWithTimeout(
+    `${HOTSCOOL_API_URL}/students/block-access/all/${studentId}/${status}`,
+    {
+      method: 'PUT',
+      headers: {
+        'x-access-token': apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    }
+  );
+  const data = await res.json().catch(() => ({}));
+  return { res, data };
+}
+
+// Detecta falha de autorização no PUT /students/access (401/403 ou 400 com
+// errors[].msg como "API Token Não autorizado"). Algumas chaves têm escrita
+// no POST /students/enrollment mas não têm grant nesse endpoint.
+function isAccessAuthFailure(status, data) {
+  if (status === 401 || status === 403) return true;
+  const msg = Array.isArray(data?.errors)
+    ? data.errors.map((e) => e?.msg).filter(Boolean).join('; ')
+    : (data?.message || data?.error || '');
+  return /não autorizado|unauthor|permiss|forbidden/i.test(String(msg || ''));
+}
+
+function paisToId(pais) {
+  const s = String(pais || '').toLowerCase();
+  if (/united|e\.u\.a|[^a-z]usa[^a-z]/.test(` ${s} `)) return 2;
+  return 1;
+}
+
+// Plano B de reativação: rematricula via POST /students/enrollment.
+// Sem senha (não altera credencial) e sem e-mail de notificação.
+async function reactivateViaEnrollment(apiKey, { nome, email, courseId, idPais = 1 }) {
+  const body = {
+    nome, email, id_curso: courseId, id_turma: 0, id_pais: idPais,
+    enviar_email_notificacao: 0,
+  };
+  const renewal = getAccessRenewalBody();
+  if (renewal) {
+    body.data_limite = renewal.data_limite;
+    body.data_expiracao = renewal.data_expiracao;
+  }
+  const res = await fetchWithTimeout(`${HOTSCOOL_API_URL}/students/enrollment`, {
+    method: 'POST',
+    headers: {
+      'x-access-token': apiKey,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  return { res, data };
 }
 
 function getStudentPortalUrl(schoolName) {
@@ -49,20 +147,114 @@ function getStudentPortalUrl(schoolName) {
 export { getSchools };
 
 function isStudentMatch(student, targetEmail) {
-  const primaryEmail = (student.email || '').trim().toLowerCase();
-  if (primaryEmail === targetEmail) return true;
+  return matchStudentEmail(student, targetEmail);
+}
 
-  if (Array.isArray(student.emails)) {
-    return student.emails.some((e) => String(e).trim().toLowerCase() === targetEmail);
+// --- Status de acesso da matrícula (ativo/bloqueado/expirado) ---
+// A Hotscool varia os nomes dos campos entre /students/all, /students/3 e
+// /students/{id}/report/course/{id}. Centraliza a heurística aqui para o
+// frontend só consumir `acessoAtivo` + `statusMatricula`.
+function parseBrDate(value) {
+  const m = String(value || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!m) return null;
+  const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  return isNaN(d) ? null : d;
+}
+
+function normalizeAccessFlag(value) {
+  if (value === true) return true;
+  if (value === false) return false;
+  const s = String(value ?? '').trim().toLowerCase();
+  if (['1', 'ativo', 'ativa', 'active', 'liberado', 'liberada', 'released'].includes(s)) return true;
+  if (['0', 'bloqueado', 'bloqueada', 'blocked', 'inativo', 'inativa', 'inactive'].includes(s)) return false;
+  return null;
+}
+
+export function getEnrollmentAccessStatus(enrollment = {}, report = {}) {
+  const sources = [report, report?.relatorio_curso, enrollment].filter((s) => s && typeof s === 'object');
+  const pick = (...keys) => {
+    for (const src of sources) {
+      for (const key of keys) {
+        if (src[key] !== undefined && src[key] !== null && src[key] !== '') return src[key];
+      }
+    }
+    return undefined;
+  };
+
+  // 1. Flags explícitas de acesso/bloqueio
+  let acessoAtivo = null;
+  const flagKeys = ['acesso', 'access', 'liberado', 'bloqueado', 'ativo', 'active', 'situacao', 'status_acesso'];
+  for (const key of flagKeys) {
+    const raw = pick(key);
+    if (raw === undefined) continue;
+    if (key === 'bloqueado') {
+      if (raw === true || String(raw).trim() === '1') { acessoAtivo = false; break; }
+      if (raw === false || String(raw).trim() === '0') { acessoAtivo = true; break; }
+      continue;
+    }
+    const normalized = normalizeAccessFlag(raw);
+    if (normalized !== null) { acessoAtivo = normalized; break; }
   }
 
-  if (typeof student.emails === 'string' && student.emails) {
-    return student.emails
-      .split(',')
-      .some((e) => e.trim().toLowerCase() === targetEmail);
+  // 2. Status textual genérico (ex.: status/situacao = 'bloqueado')
+  if (acessoAtivo === null) {
+    const statusRaw = String(pick('status_matricula', 'status', 'situacao') ?? '').trim().toLowerCase();
+    if (['bloqueado', 'bloqueada', 'blocked', 'inativo', 'inativa', 'inactive', 'suspenso', 'expirado', 'expirada', 'expired'].includes(statusRaw)) acessoAtivo = false;
+    else if (['ativo', 'ativa', 'active', 'liberado', 'liberada', 'cursando'].includes(statusRaw)) acessoAtivo = true;
   }
 
-  return false;
+  // 3. Datas de expiração (data_limite / data_expiracao / expiracao)
+  const dataLimite = pick('data_limite', 'dataLimite', 'limite_acesso');
+  const dataExpiracao = pick('data_expiracao', 'dataExpiracao', 'expiracao', 'expires_at');
+  let expirado = false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (const candidate of [dataLimite, dataExpiracao]) {
+    const parsed = parseBrDate(candidate) || (candidate ? new Date(candidate) : null);
+    if (parsed && !isNaN(parsed) && parsed < today) { expirado = true; break; }
+  }
+  if (expirado) acessoAtivo = false;
+
+  // Default: sem evidência de bloqueio na heurística, considera ativo para
+  // não gerar falso "bloqueado" em massa. `verificado=false` indica que nem a
+  // heurística nem a fonte oficial informaram o acesso.
+  const verificado = acessoAtivo !== null;
+  if (acessoAtivo === null) acessoAtivo = true;
+  const statusMatricula = !acessoAtivo ? (expirado ? 'expirado' : 'bloqueado') : 'ativo';
+  return {
+    acessoAtivo,
+    statusMatricula,
+    verificado,
+    dataLimite: dataLimite != null ? String(dataLimite) : null,
+    dataExpiracao: dataExpiracao != null ? String(dataExpiracao) : null,
+  };
+}
+
+// Fonte oficial de acesso por curso (descoberta 10/2026):
+// GET /students/course/access/{id_aluno}/{id_curso} -> {status: 1 Ativo, 2 Bloqueado}.
+// Quando responde com status válido, prevalece sobre a heurística.
+export function applyCourseAccessStatus(access, accessInfo) {
+  const st = Number(accessInfo?.status);
+  if (!Number.isSafeInteger(st) || (st !== 1 && st !== 2)) return access;
+  return {
+    ...access,
+    acessoAtivo: st === 1,
+    statusMatricula: st === 1 ? 'ativo' : 'bloqueado',
+    verificado: true,
+  };
+}
+
+export async function fetchCourseAccessStatus(apiKey, studentId, courseId) {
+  try {
+    const res = await fetchWithTimeout(
+      `${HOTSCOOL_API_URL}/students/course/access/${studentId}/${courseId}`,
+      { headers: { 'x-access-token': apiKey, 'Accept': 'application/json' } }
+    );
+    if (!res.ok) return null;
+    return await res.json().catch(() => null);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -103,6 +295,219 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     if (!requireTrustedJsonRequest(req, res)) return;
     const { batch, students, ...singleData } = req.body || {};
+
+    // Ação pontual: reativar acesso bloqueado/expirado de um curso.
+    // Body: { action: 'reactivate', email, id_curso, schoolId }
+    // Tenta PUT /students/access/{id_aluno}/{id_curso}/1 e, se a chave não
+    // tiver grant nesse endpoint, cai para rematrícula via POST /enrollment.
+    if (singleData.action === 'reactivate') {
+      const cleanEmail = String(singleData.email || '').trim().toLowerCase();
+      const courseId = Number(singleData.id_curso ?? singleData.courseId);
+      const rawSchoolId = singleData.schoolId ?? singleData.schoolIndex;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) || cleanEmail.length > 254) {
+        return res.status(400).json({ error: 'E-mail inválido para reativação.' });
+      }
+      if (!Number.isSafeInteger(courseId) || courseId <= 0) {
+        return res.status(400).json({ error: 'Curso inválido para reativação.' });
+      }
+      if (!/^\d+$/.test(String(rawSchoolId ?? ''))) {
+        return res.status(400).json({ error: 'Escola inválida para reativação.' });
+      }
+      const reactSchool = schools.find((school) => school.id === Number(rawSchoolId));
+      if (!reactSchool) {
+        return res.status(403).json({ error: 'Escola selecionada não autorizada.' });
+      }
+      try {
+        const found = await findStudentInSchool(reactSchool.apiKey, cleanEmail);
+        if (!found) {
+          return res.status(404).json({ error: 'Aluno não encontrado nesta escola.' });
+        }
+        // 1) Desbloqueio em nível de aluno ("Assinatura expirada" -> ativa).
+        let studentUnlocked = false;
+        try {
+          const ub = await putStudentBlockAccess(reactSchool.apiKey, found.id, 1);
+          studentUnlocked = ub.res.ok;
+        } catch { /* segue para as tentativas por curso */ }
+        // 2) Reativação por curso (com datas renovadas).
+        let { accessRes, accessData } = await putStudentAccess(reactSchool.apiKey, found.id, courseId);
+        let viaFallback = false;
+        if (!accessRes.ok && !studentUnlocked && isAccessAuthFailure(accessRes.status, accessData)) {
+          const fb = await reactivateViaEnrollment(reactSchool.apiKey, {
+            nome: found.nome || cleanEmail,
+            email: cleanEmail,
+            courseId,
+            idPais: paisToId(found.pais),
+          });
+          if (fb.res.ok || fb.res.status === 409) {
+            viaFallback = true;
+            accessData = fb.data;
+          }
+        }
+        invalidateSchoolCache(reactSchool.apiKey);
+        try { (await import('./licenses.js')).invalidateLicensesCache(reactSchool.apiKey); } catch {}
+        const reactivated = accessRes.ok || viaFallback || studentUnlocked;
+        if (!reactivated) {          if (accessRes.status === 401 || accessRes.status === 403) {
+            return res.status(403).json({ error: 'A chave desta escola não tem permissão de escrita na Hotscool.' });
+          }
+          // A Hotscool valida o token nesse endpoint e responde 400 com
+          // errors[].msg (ex.: "API Token Não autorizado") quando a chave só
+          // tem leitura. Repassa a mensagem real em vez de erro genérico.
+          const hotscoolMsg = Array.isArray(accessData?.errors)
+            ? accessData.errors.map((e) => e?.msg).filter(Boolean).join('; ')
+            : (accessData?.message || accessData?.error || null);
+          const detail = hotscoolMsg ? `: ${hotscoolMsg}` : '';
+          if (/não autorizado|unauthor|permiss|forbidden/i.test(hotscoolMsg || '')) {
+            return res.status(403).json({ error: `A chave desta escola não tem grant neste endpoint da Hotscool${detail}. Confira o FULL ACESSO desta chave no painel (pode ser preciso regenerá-la).` });
+          }
+          return res.status(502).json({ error: `A Hotscool rejeitou a reativação (HTTP ${accessRes.status})${detail}.`, detalhes: accessData });
+        }
+        recordEnrollment({ schoolId: reactSchool.id, email: cleanEmail, courseId, source: 'reactivate' });
+        return res.status(200).json({
+          message: viaFallback
+            ? 'Acesso ao curso reativado via rematrícula!'
+            : (studentUnlocked && !accessRes.ok
+              ? 'Matrícula desbloqueada (assinatura reativada)!'
+              : 'Acesso ao curso reativado com sucesso!'),
+          email: cleanEmail,
+          id_curso: courseId,
+          id_aluno: found.id,
+          escola: reactSchool.name,
+          ...(viaFallback ? { viaFallback: true } : {}),
+          ...(studentUnlocked ? { studentUnlocked: true } : {}),
+        });
+      } catch (err) {
+        return res.status(500).json({ error: 'Erro interno ao reativar acesso.' });
+      }
+    }
+
+    // Ação pontual: bloquear acesso a um curso.
+    // Body: { action: 'block', email, id_curso, schoolId }
+    // Usa PUT /students/access/{id_aluno}/{id_curso}/2.
+    if (singleData.action === 'block') {
+      const cleanEmail = String(singleData.email || '').trim().toLowerCase();
+      const courseId = Number(singleData.id_curso ?? singleData.courseId);
+      const rawSchoolId = singleData.schoolId ?? singleData.schoolIndex;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) || cleanEmail.length > 254) {
+        return res.status(400).json({ error: 'E-mail inválido para bloqueio.' });
+      }
+      if (!Number.isSafeInteger(courseId) || courseId <= 0) {
+        return res.status(400).json({ error: 'Curso inválido para bloqueio.' });
+      }
+      if (!/^\d+$/.test(String(rawSchoolId ?? ''))) {
+        return res.status(400).json({ error: 'Escola inválida para bloqueio.' });
+      }
+      const blockSchool = schools.find((school) => school.id === Number(rawSchoolId));
+      if (!blockSchool) {
+        return res.status(403).json({ error: 'Escola selecionada não autorizada.' });
+      }
+      try {
+        const found = await findStudentInSchool(blockSchool.apiKey, cleanEmail);
+        if (!found) {
+          return res.status(404).json({ error: 'Aluno não encontrado nesta escola.' });
+        }
+        const blockRes = await fetchWithTimeout(
+          `${HOTSCOOL_API_URL}/students/access/${found.id}/${courseId}/2`,
+          {
+            method: 'PUT',
+            headers: {
+              'x-access-token': blockSchool.apiKey,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          }
+        );
+        const blockData = await blockRes.json().catch(() => ({}));
+        invalidateSchoolCache(blockSchool.apiKey);
+        try { (await import('./licenses.js')).invalidateLicensesCache(blockSchool.apiKey); } catch {}
+        if (!blockRes.ok) {
+          if (isAccessAuthFailure(blockRes.status, blockData)) {
+            return res.status(403).json({ error: 'A chave desta escola não tem grant neste endpoint da Hotscool. Confira o FULL ACESSO desta chave no painel (pode ser preciso regenerá-la).' });
+          }
+          return res.status(502).json({ error: `A Hotscool rejeitou o bloqueio (HTTP ${blockRes.status}).`, detalhes: blockData });
+        }
+        return res.status(200).json({
+          message: 'Acesso ao curso bloqueado com sucesso!',
+          email: cleanEmail,
+          id_curso: courseId,
+          id_aluno: found.id,
+          escola: blockSchool.name,
+        });
+      } catch (err) {
+        return res.status(500).json({ error: 'Erro interno ao bloquear acesso.' });
+      }
+    }
+
+    // Ação pontual: desmatricular aluno de um curso específico.
+    // Body: { action: 'withdraw', email, id_curso, schoolId }
+    // Usa DELETE /students/withdraw/{id_aluno}/{id_curso}.
+    if (singleData.action === 'withdraw') {
+      const cleanEmail = String(singleData.email || '').trim().toLowerCase();
+      const courseId = Number(singleData.id_curso ?? singleData.courseId);
+      const rawSchoolId = singleData.schoolId ?? singleData.schoolIndex;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) || cleanEmail.length > 254) {
+        return res.status(400).json({ error: 'E-mail inválido para desmatricular.' });
+      }
+      if (!Number.isSafeInteger(courseId) || courseId <= 0) {
+        return res.status(400).json({ error: 'Curso inválido para desmatricular.' });
+      }
+      if (!/^\d+$/.test(String(rawSchoolId ?? ''))) {
+        return res.status(400).json({ error: 'Escola inválida para desmatricular.' });
+      }
+      const withdrawSchool = schools.find((school) => school.id === Number(rawSchoolId));
+      if (!withdrawSchool) {
+        return res.status(403).json({ error: 'Escola selecionada não autorizada.' });
+      }
+      try {
+        const found = await findStudentInSchool(withdrawSchool.apiKey, cleanEmail);
+        if (!found) {
+          return res.status(404).json({ error: 'Aluno não encontrado nesta escola.' });
+        }
+        // A matrícula propaga de forma assíncrona na Hotscool: um POST /enrollment
+        // com 200 pode responder "não matriculado" no withdraw segundos depois.
+        // Repete até 3x com backoff antes de desistir.
+        let withdrawRes = null;
+        let withdrawData = {};
+        for (let attempt = 0; attempt < 3; attempt++) {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 3000 * attempt));
+          withdrawRes = await fetchWithTimeout(
+            `${HOTSCOOL_API_URL}/students/withdraw/${found.id}/${courseId}`,
+            {
+              method: 'DELETE',
+              headers: {
+                'x-access-token': withdrawSchool.apiKey,
+                'Accept': 'application/json',
+              },
+            }
+          );
+          withdrawData = await withdrawRes.json().catch(() => ({}));
+          if (withdrawRes.ok) break;
+          const msg = Array.isArray(withdrawData?.errors)
+            ? withdrawData.errors.map((e) => e?.msg).filter(Boolean).join('; ')
+            : (withdrawData?.message || '');
+          if (!/não matriculado|not enrolled|not found/i.test(msg)) break;
+        }
+        invalidateSchoolCache(withdrawSchool.apiKey);
+        try { (await import('./licenses.js')).invalidateLicensesCache(withdrawSchool.apiKey); } catch {}
+        if (!withdrawRes.ok) {
+          if (isAccessAuthFailure(withdrawRes.status, withdrawData)) {
+            return res.status(403).json({ error: 'A chave desta escola não tem grant neste endpoint da Hotscool. Confira o FULL ACESSO desta chave no painel (pode ser preciso regenerá-la).' });
+          }
+          const msg = Array.isArray(withdrawData?.errors)
+            ? withdrawData.errors.map((e) => e?.msg).filter(Boolean).join('; ')
+            : (withdrawData?.message || null);
+          return res.status(502).json({ error: `A Hotscool rejeitou a desmatrícula (HTTP ${withdrawRes.status})${msg ? `: ${msg}` : ''}.`, detalhes: withdrawData });
+        }
+        return res.status(200).json({
+          message: 'Aluno desmatriculado do curso com sucesso!',
+          email: cleanEmail,
+          id_curso: courseId,
+          id_aluno: found.id,
+          escola: withdrawSchool.name,
+        });
+      } catch (err) {
+        return res.status(500).json({ error: 'Erro interno ao desmatricular.' });
+      }
+    }
 
     // Se for requisição em lote
     const isBatch = Array.isArray(batch) || Array.isArray(students);
@@ -346,18 +751,42 @@ export default async function handler(req, res) {
         async function enrollCourse(courseId) {
           if (existingStudent && alreadyEnrolledIds.has(courseId)) {
             try {
-              const accessRes = await fetchWithTimeout(
-                `${HOTSCOOL_API_URL}/students/access/${existingStudent.id}/${courseId}/1`,
-                {
-                  method: 'PUT',
-                  headers: {
-                    'x-access-token': targetSchool.apiKey,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                  },
+              const { accessRes, accessData } = await putStudentAccess(targetSchool.apiKey, existingStudent.id, courseId);
+              if (accessRes.ok) {
+                recordEnrollment({ schoolId: targetSchool.id, email: cleanEmail, courseId, source: 'renew' });
+              }
+              if (!accessRes.ok && isAccessAuthFailure(accessRes.status, accessData)) {
+                let studentUnlocked = false;
+                try {
+                  const ub = await putStudentBlockAccess(targetSchool.apiKey, existingStudent.id, 1);
+                  studentUnlocked = ub.res.ok;
+                } catch {}
+                if (studentUnlocked) {
+                  return {
+                    courseId,
+                    ok: true,
+                    status: 200,
+                    data: { alreadyEnrolled: true, reactivated: true, studentUnlocked: true, accessData },
+                    rematricula: true,
+                  };
                 }
-              );
-              const accessData = await accessRes.json().catch(() => ({}));
+                const fb = await reactivateViaEnrollment(targetSchool.apiKey, {
+                  nome: cleanNome,
+                  email: cleanEmail,
+                  courseId,
+                  idPais: paisNum,
+                });
+                if (fb.res.ok || fb.res.status === 409) {
+                  return {
+                    courseId,
+                    ok: true,
+                    status: 200,
+                    data: { alreadyEnrolled: true, reactivated: true, viaFallback: true, accessData: fb.data },
+                    rematricula: true,
+                  };
+                }
+                return { courseId, ok: false, status: fb.res.status, data: fb.data };
+              }
               return {
                 courseId,
                 ok: true,
@@ -422,6 +851,7 @@ export default async function handler(req, res) {
               });
               const retryData = await retryRes.json().catch(() => ({}));
               if (retryRes.ok) {
+                recordEnrollment({ schoolId: targetSchool.id, email: cleanEmail, courseId, source: 'enrollment' });
                 return { courseId, ok: true, status: retryRes.status, data: retryData };
               } else if (retryRes.status === 409) {
                 return { courseId, ok: true, status: 200, data: { ...retryData, alreadyEnrolled: true }, rematricula: true };
@@ -433,6 +863,9 @@ export default async function handler(req, res) {
               return { courseId, ok: true, status: 200, data: { ...resData, alreadyEnrolled: true }, rematricula: true };
             } else {
               if (!response.ok) console.error(`[Hotscool API ${response.status}] Falha curso ${courseId}`);
+              if (response.ok) {
+                recordEnrollment({ schoolId: targetSchool.id, email: cleanEmail, courseId, source: 'enrollment' });
+              }
               return { courseId, ok: response.ok, status: response.status, data: resData };
             }
           } catch (fetchErr) {
@@ -618,6 +1051,7 @@ export default async function handler(req, res) {
       if (!isBatch) {
         const result = await processSingleStudent(studentsToProcess[0]);
         invalidateSchoolCache(targetSchool.apiKey);
+        try { (await import('./licenses.js')).invalidateLicensesCache(targetSchool.apiKey); } catch {}
 
         if (!result.ok) {
           return res.status(400).json({
@@ -645,6 +1079,7 @@ export default async function handler(req, res) {
       );
 
       invalidateSchoolCache(targetSchool.apiKey);
+      try { (await import('./licenses.js')).invalidateLicensesCache(targetSchool.apiKey); } catch {}
 
       const totalSucesso = batchResults.filter((r) => r.ok).length;
       const totalFalhas = batchResults.length - totalSucesso;
@@ -749,6 +1184,7 @@ export default async function handler(req, res) {
           (item) => Number(item.id) === Number(c.id_curso)
         );
         if (!cursosMap.has(enrollmentKey)) {
+          const initialAccess = getEnrollmentAccessStatus(c, {});
           cursosMap.set(enrollmentKey, {
             id_curso: c.id_curso,
             titulo_curso: c.titulo_curso || c.nome || 'Curso sem título',
@@ -761,7 +1197,9 @@ export default async function handler(req, res) {
             duracao: catalogCourse?.duracao || null,
             acessoUrl: getStudentPortalUrl(schoolName),
             studentId: r.match.id,
+            schoolId: r.school.id,
             schoolApiKey: r.school.apiKey,
+            ...initialAccess,
           });
         }
       });
@@ -776,6 +1214,7 @@ export default async function handler(req, res) {
           (item) => Number(item.id) === Number(c.id_curso)
         );
         if (!cursosMap.has(enrollmentKey)) {
+          const initialAccess = getEnrollmentAccessStatus(c, {});
           cursosMap.set(enrollmentKey, {
             id_curso: c.id_curso,
             titulo_curso: c.titulo_curso || 'Curso sem título',
@@ -788,7 +1227,9 @@ export default async function handler(req, res) {
             duracao: catalogCourse?.duracao || null,
             acessoUrl: getStudentPortalUrl(primaryStudent.escola || primarySchool.name),
             studentId: primaryStudentId,
+            schoolId: primarySchool.id,
             schoolApiKey: primarySchool.apiKey,
+            ...initialAccess,
           });
         }
       });
@@ -799,22 +1240,40 @@ export default async function handler(req, res) {
     // 4b. Resumo progressivo: identidade + cursos sem os N relatórios de
     // progresso (rápido). O frontend renderiza e busca o full em seguida.
     if (detail === 'summary') {
+      // Status oficial por curso (leve: 1 chamada pequena por curso, em paralelo).
+      const accessByKey = new Map(
+        await mapWithConcurrency(
+          cursosList.filter((c) => c.id_curso),
+          hotscoolConcurrency(),
+          async (curso) => [
+            `${curso.schoolId}:${curso.id_curso}`,
+            await fetchCourseAccessStatus(curso.schoolApiKey, curso.studentId, curso.id_curso),
+          ],
+        )
+      );
       const summaryCourses = cursosList.map((curso) => {
-        const { studentId, schoolApiKey, ...publicFields } = curso;
-        return { ...publicFields, percentual: 0, percentualFormatado: '0%', concluido: false };
+        const { schoolApiKey, ...publicFields } = curso;
+        const official = accessByKey.get(`${curso.schoolId}:${curso.id_curso}`);
+        const withOfficial = applyCourseAccessStatus(publicFields, official);
+        if (official && Number.isSafeInteger(Number(official.status))) {
+          return { ...withOfficial, percentual: 0, percentualFormatado: '0%', concluido: false };
+        }
+        return { ...withOfficial, acessoSincronizando: true, percentual: 0, percentualFormatado: '0%', concluido: false };
       });
       let summaryCadastro = null;
       if (s3Data.data_cadastro) {
         const parsed = new Date(s3Data.data_cadastro);
         if (!isNaN(parsed)) summaryCadastro = parsed.toLocaleDateString('pt-BR');
       }
+      const summaryBlocked = summaryCourses.filter((c) => c.acessoAtivo === false).length;
       return res.status(200).json({
         detail: 'summary',
         id: primaryStudentId,
         nome: s3Data.nome || primaryStudent.nome || 'Nome não informado',
         email: s3Data.email || primaryStudent.email || cleanEmail,
         avatar: s3Data.avatar || primaryStudent.avatar || null,
-        status: 'Ativo',
+        status: summaryBlocked > 0 ? 'Atenção' : 'Ativo',
+        totalBloqueados: summaryBlocked,
         emailConfirmado: s3Data.email_confirmado === 1,
         codigoExterno: s3Data.codigo_externo || null,
         dataCadastro: summaryCadastro,
@@ -846,7 +1305,6 @@ export default async function handler(req, res) {
         if (!curso.id_curso) {
           return {
             ...curso,
-            studentId: undefined,
             schoolApiKey: undefined,
             percentual: 0,
             percentualFormatado: '0%',
@@ -854,16 +1312,21 @@ export default async function handler(req, res) {
           };
         }
 
+        let accessInfo = null;
         try {
-          const repRes = await fetchWithTimeout(
-            `${HOTSCOOL_API_URL}/students/${curso.studentId}/report/course/${curso.id_curso}`,
-            {
-              headers: {
-                'x-access-token': curso.schoolApiKey,
-                'Accept': 'application/json',
-              },
-            }
-          );
+          const [repRes, fetched] = await Promise.all([
+            fetchWithTimeout(
+              `${HOTSCOOL_API_URL}/students/${curso.studentId}/report/course/${curso.id_curso}`,
+              {
+                headers: {
+                  'x-access-token': curso.schoolApiKey,
+                  'Accept': 'application/json',
+                },
+              }
+            ),
+            fetchCourseAccessStatus(curso.schoolApiKey, curso.studentId, curso.id_curso),
+          ]);
+          accessInfo = fetched;
 
           if (repRes.ok) {
             const repData = await repRes.json();
@@ -879,6 +1342,7 @@ export default async function handler(req, res) {
               certUrl = rel.certificado.url;
             }
 
+            const access = applyCourseAccessStatus(getEnrollmentAccessStatus(curso, rel), accessInfo);
             return {
               id_curso: curso.id_curso,
               titulo_curso: curso.titulo_curso,
@@ -889,6 +1353,9 @@ export default async function handler(req, res) {
               categoria: curso.categoria,
               duracao: curso.duracao,
               acessoUrl: curso.acessoUrl,
+              studentId: curso.studentId,
+              schoolId: curso.schoolId,
+              ...access,
               percentual: percNum,
               percentualFormatado: `${percNum}%`,
               concluido: isDone,
@@ -902,7 +1369,7 @@ export default async function handler(req, res) {
 
         return {
           ...curso,
-          studentId: undefined,
+          ...applyCourseAccessStatus(getEnrollmentAccessStatus(curso, {}), accessInfo),
           schoolApiKey: undefined,
           percentual: 0,
           percentualFormatado: '0%',
@@ -1081,12 +1548,19 @@ export default async function handler(req, res) {
     const cargo = categorizacao.cargo || null;
 
     // Resposta consolidada (SEM CPF, SEM ENDEREÇO, SEM TELEFONE)
+    // SEM apiKey: cada curso leva apenas schoolId + studentId para reativação.
+    const cursosPublicos = cursosComProgresso.map((curso) => {
+      const { schoolApiKey, ...rest } = curso;
+      return rest;
+    });
+    const totalBloqueados = cursosPublicos.filter((c) => c.acessoAtivo === false).length;
     return res.status(200).json({
       id: primaryStudentId,
       nome: s3Data.nome || primaryStudent.nome || 'Nome não informado',
       email: s3Data.email || primaryStudent.email || cleanEmail,
       avatar: s3Data.avatar || primaryStudent.avatar || null,
-      status: 'Ativo',
+      status: totalBloqueados > 0 ? (totalBloqueados >= totalCursos ? 'Bloqueado' : 'Atenção') : 'Ativo',
+      totalBloqueados,
       emailConfirmado: s3Data.email_confirmado === 1,
       codigoExterno: s3Data.codigo_externo || null,
       dataCadastro: dataCadastroFormatada,
@@ -1106,7 +1580,7 @@ export default async function handler(req, res) {
       progressoGeral,
       totalCertificados: certificados.length,
       // Listas
-      cursos: cursosComProgresso,
+      cursos: cursosPublicos,
       certificados,
       gamificacao,
     });

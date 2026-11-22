@@ -1,9 +1,9 @@
 ---
 name: Consistem Design System
 colors:
-  surface: '#f8f9fa'
+  surface: '#f5f5f5'
   surface-dim: '#d9dadb'
-  surface-bright: '#f8f9fa'
+  surface-bright: '#ffffff'
   surface-container-lowest: '#ffffff'
   surface-container-low: '#f3f4f5'
   surface-container: '#edeeef'
@@ -23,15 +23,15 @@ colors:
   inverse-primary: '#ffffff'
   secondary: '#df5241'
   on-secondary: '#ffffff'
-  secondary-container: '#fff5f4'
+  secondary-container: '#fceeec'
   on-secondary-container: '#df5241'
   tertiary: '#ebaf2d'
   on-tertiary: '#ffffff'
   tertiary-container: '#fcf5e5'
-  on-tertiary-container: '#9c7013'
-  error: '#ba1a1a'
+  on-tertiary-container: '#956a0e'
+  error: '#c4432e'
   on-error: '#ffffff'
-  error-container: '#ffdad6'
+  error-container: '#f5c9c4'
   on-error-container: '#93000a'
   primary-fixed: '#e4e2e4'
   primary-fixed-dim: '#c8c6c8'
@@ -45,99 +45,101 @@ colors:
   tertiary-fixed-dim: '#fabc3a'
   on-tertiary-fixed: '#271900'
   on-tertiary-fixed-variant: '#5e4200'
-  background: '#f8f9fa'
+  background: '#f5f5f5'
   on-background: '#191c1d'
   surface-variant: '#e1e3e4'
   graphite-pure: '#2e2e30'
-  graphite-hover: '#222223'
-  graphite-muted: '#68686d'
-  graphite-subtle: '#a5a5ab'
-  graphite-border: '#e8e9eb'
-  surface-canvas: '#f8f9fa'
+  graphite-hover: '#2a2a2c'
+  graphite-muted: 'rgba(46,46,48,0.70)'
+  graphite-subtle: 'rgba(46,46,48,0.40)'
+  graphite-border: '#eaeaea'
+  surface-canvas: '#f5f5f5'
   surface-card: '#ffffff'
-  surface-sunken: '#f1f3f5'
+  surface-sunken: '#f5f5f5'
   coral-primary: '#df5241'
-  coral-hover: '#c84434'
-  coral-subtle: '#fceee5'
-  coral-surface: '#fff5f4'
+  coral-hover: '#cb4b3b'
+  coral-subtle: '#fceeec'
+  coral-surface: '#fceeec'
   gold-accent: '#ebaf2d'
-  gold-hover: '#d29a21'
+  gold-hover: '#e9a616'
   gold-subtle: '#fcf5e5'
-  status-success: '#2e9e66'
+  status-success: '#1e7a45'
   status-success-subtle: '#eaf7f0'
+# Estilos de texto da DS Consistem (fonte da verdade). Família: DM Sans.
 typography:
-  display-lg:
+  Headings/heading-xl:    # H2 de seção
     fontFamily: DM Sans
-    fontSize: 36px
-    fontWeight: '600'
-    lineHeight: 36px
-    letterSpacing: -0.02em
-  display-lg-mobile:
+    fontSize: 40px
+    fontWeight: '400'
+    lineHeight: 44px
+    letterSpacing: -0.8px
+  Headings/heading-lg:    # título de destaque / bloco secundário
     fontFamily: DM Sans
-    fontSize: 28px
-    fontWeight: '600'
-    lineHeight: 28px
-    letterSpacing: -0.02em
-  headline-lg:
+    fontSize: 32px
+    fontWeight: '400'
+    lineHeight: 38.4px
+    letterSpacing: -0.64px
+  Headings/heading-md:    # título de card (130%)
     fontFamily: DM Sans
     fontSize: 24px
-    fontWeight: '600'
-    lineHeight: 24px
-    letterSpacing: -0.02em
-  headline-md:
+    fontWeight: '400'
+    lineHeight: 130%
+    letterSpacing: 0
+  Headings/heading-sm:    # título de item
     fontFamily: DM Sans
     fontSize: 20px
-    fontWeight: '600'
-    lineHeight: 20px
-    letterSpacing: -0.02em
-  headline-sm:
-    fontFamily: DM Sans
-    fontSize: 18px
-    fontWeight: '600'
-    lineHeight: 18px
-    letterSpacing: -0.02em
-  title-md:
-    fontFamily: DM Sans
-    fontSize: 16px
-    fontWeight: '600'
-    lineHeight: 16px
-    letterSpacing: -0.02em
-  body-lg:
-    fontFamily: DM Sans
-    fontSize: 16px
     fontWeight: '400'
     lineHeight: 24px
-    letterSpacing: 0em
-  body-md:
+    letterSpacing: 0
+  Body/lead:              # subtítulo de seção e hero
+    fontFamily: DM Sans
+    fontSize: 20px
+    fontWeight: '400'
+    lineHeight: 24px
+    letterSpacing: -0.4px
+  Body/body-lg:           # corpo de artigo (apenas onde a biblioteca usa)
+    fontFamily: DM Sans
+    fontSize: 16px
+    fontWeight: '400'
+    lineHeight: 130%
+    letterSpacing: 0
+  Body/body:              # texto corrido, descrições, botões
+    fontFamily: DM Sans
+    fontSize: 16px
+    fontWeight: '400'
+    lineHeight: 130%
+    letterSpacing: 0
+  Body/body-strong:       # ênfase em texto corrido e rótulos de navegação
+    fontFamily: DM Sans
+    fontSize: 16px
+    fontWeight: '600'
+    lineHeight: 130%
+    letterSpacing: 0
+  Body/caption:           # resumos curtos, itens de menu, metadados
     fontFamily: DM Sans
     fontSize: 14px
     fontWeight: '400'
-    lineHeight: 21px
-    letterSpacing: 0em
-  body-sm:
-    fontFamily: DM Sans
-    fontSize: 13px
-    fontWeight: '400'
-    lineHeight: 19.5px
-    letterSpacing: 0em
-  label-lg:
-    fontFamily: DM Sans
-    fontSize: 14px
-    fontWeight: '500'
-    lineHeight: 18px
-    letterSpacing: 0em
-  label-md:
+    lineHeight: 130%
+    letterSpacing: 0
+  Labels/label:           # meta curta, tags, contadores
     fontFamily: DM Sans
     fontSize: 12px
     fontWeight: '600'
-    lineHeight: 16px
-    letterSpacing: 0.02em
-  label-sm:
+    lineHeight: 130%
+    letterSpacing: 0
+  Labels/label-regular:   # links de rodapé, breadcrumb
     fontFamily: DM Sans
-    fontSize: 11px
+    fontSize: 12px
+    fontWeight: '400'
+    lineHeight: 130%
+    letterSpacing: -0.24px
+  Labels/label-xs:        # caixa-alta: categoria e selo HELP
+    fontFamily: DM Sans
+    fontSize: 10px
     fontWeight: '600'
-    lineHeight: 14px
-    letterSpacing: 0.04em
+    lineHeight: 130%
+    letterSpacing: 0
+    textCase: UPPER
 rounded:
   sm: 0.25rem
   DEFAULT: 0.5rem
@@ -145,17 +147,29 @@ rounded:
   lg: 1rem
   xl: 1.5rem
   full: 9999px
-spacing:
-  space-2xs: 0.25rem
-  space-xs: 0.5rem
-  space-sm: 0.75rem
-  space-md: 1rem
-  space-lg: 1.25rem
-  space-xl: 1.5rem
-  space-2xl: 2rem
-  space-3xl: 2.5rem
-  space-4xl: 3rem
-  layout-margin-mobile: 1rem
+spacing:  # escala da DS Consistem (px)
+  space-0: 0px
+  space-2: 2px
+  space-4: 4px
+  space-6: 6px
+  space-8: 8px
+  space-12: 12px
+  space-16: 16px
+  space-20: 20px
+  space-24: 24px
+  space-32: 32px
+  space-40: 40px
+  space-48: 48px
+  space-56: 56px
+  space-64: 64px
+  space-80: 80px
+  space-96: 96px
+  space-112: 112px
+  space-128: 128px
+  space-160: 160px
+  space-192: 192px
+  space-256: 256px
+  layout-margin-mobile: 1rem      # margens de layout do projeto (sem equivalente exato na biblioteca: layout/page-inset = 8px, a confirmar)
   layout-margin-tablet: 1.5rem
   layout-margin-desktop: 2.5rem
   gutter-desktop: 1.5rem
@@ -183,8 +197,8 @@ A arquitetura de cor prioriza clareza, legibilidade e suporte à tomada de decis
 - **Neutral (`#f8f9fa` - Canvas Suave):** Fundo padrão da aplicação que garante o respiro e contrasta com módulos flutuantes[cite: 1, 3].
 
 ### Gradients & Badges
-- **Estados Interativos:** Elementos em Coral migram para `#c84434` no hover[cite: 1]. Grafite migra para `#222223`[cite: 1].
-- **Badges de Status:** Combinam fundo suave desaturado com texto em tom pleno (ex: fundo `#fff5f4` com texto `#df5241` para erros/alertas; fundo `#fcf5e5` com texto `#9c7013` para pendências)[cite: 1].
+- **Estados Interativos:** Elementos em Coral migram para `#cb4b3b` no hover[cite: 1]. Grafite migra para `#2a2a2c`[cite: 1].
+- **Badges de Status:** Combinam fundo suave desaturado com texto em tom pleno (ex: fundo `#fceeec` com texto `#cb4b3b` para erros/alertas; fundo `#fcf5e5` com texto `#956a0e` para pendências)[cite: 1]. Texto de cor coral sobre fundo claro usa `#cb4b3b` (token `text-accent`, contraste AA); `#df5241` fica para ícones, bordas e fundos.
 - **Gradiente Secundário Autorizado:** Transição a $135^\circ$ entre `#df5241` (100%) e `#ebaf2d` (100%), reservada a banners ou cards de alto impacto[cite: 1].
 
 ## Typography
@@ -192,8 +206,9 @@ A arquitetura de cor prioriza clareza, legibilidade e suporte à tomada de decis
 A tipografia oficial é a **DM Sans**[cite: 1]. Oferece uma leitura geométrica limpa e fluida[cite: 1].
 
 ### Diretrizes de Hierarquia & Tipografia
-- **Títulos & Headlines:** Renderizados em `SemiBold` (600) com tracking `-20` (`-0.02em`)[cite: 1]. A entrelinha para títulos é igual a 100% do tamanho da fonte (ex: 24px de fonte / 24px line-height) para manter o bloco coeso e marcante[cite: 1]. Subtítulos devem possuir entre 60% e 75% do tamanho do título[cite: 1].
-- **Texto Corrido (Body):** Utiliza peso `Regular` (400) com entrelinha estrita de `1.5` (150% do tamanho da fonte) para maximizar a escaneabilidade[cite: 1]. O tamanho do corpo deve possuir de 70% a 85% do tamanho do subtítulo[cite: 1].
+- **Títulos & Headlines (Headings/*):** Peso `Regular` (400) com tracking `-0.02em` nos títulos de seção (heading-xl 40/44, heading-lg 32/38.4). Para ênfase dentro do título, use peso 600. Os títulos de card e de item (heading-md, heading-sm) seguem o mesmo peso.
+- **Texto Corrido (Body/*):** Peso `Regular` (400) com entrelinha de 130% (estilo `Body/body`). Rótulos e metadados usam `Labels/*` (12 SemiBold; 10 SemiBold em caixa-alta apenas para etiquetas curtas).
+- **Subtítulo (Body/lead):** 20px com entrelinha de 24px e tracking `-0.4px`.
 - **Alinhamento & Estilo:** Alinhamento preferencial à esquerda[cite: 1, 3]. Evitar parágrafos longos centralizados ou justificados[cite: 1, 3]. Caixa alta (uppercase) deve ser restrita a pequenas etiquetas/badges (`label-sm` / `label-md`)[cite: 1].
 - **Grafia da Marca:** Sempre escrever **Consistem** em textos corridos (Maiúscula seguida de minúsculas)[cite: 1]. Nunca escrever CONSISTEM[cite: 1].
 
@@ -216,7 +231,7 @@ Geometria suave com bordas levemente arredondadas e uso moderado de profundidade
 ### Tratameno de Forma (Shapes)
 - **Cards e Painéis:** Cantos arredondados suavizados (`0.75rem` / 12px a `1rem` / 16px). Evitar cantos de $90^\circ$ totalmente rígidos[cite: 1].
 - **Imagens e Ilustrações:** Evitar enclausurar imagens em caixas com fundos carregados[cite: 3]. Imagens e ilustrações recortadas (PNG/SVG) que integram suavemente no fundo neutro facilitam o foco e o respiro[cite: 1, 3].
-- **Sombra & Camadas:** Profundidade construída via sombras difusas sutis (`0 4px 20px -2px rgba(46, 46, 48, 0.04)`) combinadas a bordas finas em `#e8e9eb`[cite: 1].
+- **Sombra & Camadas:** Efeitos da biblioteca: `shadow/shadow-float` (0 4px 8px, 10% preto) para elementos flutuantes, `shadow/shadow-media` (0 20px 40px, 10%) para fotos e mídias, `shadow/shadow-overlay` (0 8px 32px, 28%) para popovers e painéis sobre fundo escuro e `shadow/shadow-inner-hairline` (contorno interno 1px, branco 14%). Cards usam borda fina `#eaeaea` (`color/border`) e não sombra.
 
 ## Iconography & Button System
 

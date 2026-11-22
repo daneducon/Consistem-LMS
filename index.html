@@ -84,6 +84,20 @@
           </svg>
           <span class="sidebar-label">Plano de aula</span>
         </button>
+        <button type="button" class="sidebar-btn" data-sidebar="licenses" title="Licenças e Riscos" aria-label="Licenças e riscos">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <polyline points="9 12 11 14 15 10" />
+          </svg>
+          <span class="sidebar-label">Licenças e riscos</span>
+        </button>
+        <button type="button" class="sidebar-btn" data-sidebar="avaliacoes" title="Avaliações" aria-label="Avaliações">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4" />
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+          </svg>
+          <span class="sidebar-label">Avaliações</span>
+        </button>
       </nav>
     </div>
   </aside>
@@ -224,9 +238,9 @@
         </div>
 
         <!-- KPIs -->
-        <div class="kpi-row">
-          <div class="kpi-card">
-            <div class="kpi-icon blue">
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-icon blue">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
@@ -859,7 +873,7 @@
           </div>
         </div>
 
-        <div class="preview-table-card">
+      <div class="preview-table-card">
           <div class="preview-table-header">
             <div>
               <h3>Pre-visualizacao dos Registros da Planilha</h3>
@@ -1155,9 +1169,195 @@
       <div id="lessonPlanApp"></div>
     </section>
 
+    <!-- ============================================ -->
+    <!-- ABA 6: AVALIAÇÕES (quiz de Fundamentos de IA) -->
+    <!-- ============================================ -->
+    <section id="avaliacoesTab" class="tab-content" style="display:none">
+      <div class="page-title-block">
+        <h1 class="page-title">Avaliações</h1>
+        <p class="page-subtitle">Tentativas, notas e bloqueios do quiz de Fundamentos de IA. Liberar reabre as tentativas do aluno a partir daquele momento.</p>
+      </div>
+      <div class="avl-filter">
+        <label class="avl-filter__field" id="avaliacoesAreaField">
+          <span>Área</span>
+          <select id="avaliacoesArea">
+            <option value="">Todas as áreas</option>
+          </select>
+        </label>
+        <div class="avl-filter__field avl-filter__field--wide">
+          <span>Pessoas</span>
+          <div class="avl-chips" id="avaliacoesPessoasBox">
+            <div id="avaliacoesPessoasChips" class="avl-chips__lista"></div>
+            <input id="avaliacoesPessoaBusca" type="search" placeholder="Buscar pessoa para adicionar" autocomplete="off" />
+            <button type="button" class="btn-ghost-sm" id="avaliacoesPessoasLimpar" hidden>Limpar</button>
+          </div>
+          <ul id="avaliacoesPessoasSugestoes" class="avl-suggest" hidden></ul>
+        </div>
+        <label class="avl-filter__check">
+          <input id="avaliacoesSomenteBloqueados" type="checkbox" />
+          Somente bloqueados
+        </label>
+      </div>
+      <div id="avaliacoesDashboard" class="avl-dashboard" aria-live="polite"></div>
+      <h2 class="avl-section-title">Alunos</h2>
+      <div class="lic-toolbar" style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+        <input id="avaliacoesSearch" type="search" placeholder="Buscar por nome ou e-mail" style="flex:1;min-width:220px;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line, #d9d9d9)" />
+        <button type="button" class="btn-secondary-outline" id="avaliacoesRefreshBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>
+          Atualizar
+        </button>
+        <button type="button" class="btn-secondary-outline" id="avaliacoesPdfBtn">Gerar PDF</button>
+        <button type="button" class="btn-secondary-outline" id="avaliacoesCsvBtn">Exportar CSV</button>
+      </div>
+      <p id="avaliacoesStatus" class="page-subtitle" role="status"></p>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Aluno</th>
+              <th>Curso</th>
+              <th>Tentativas</th>
+              <th>Última nota</th>
+              <th>Situação</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="avaliacoesTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- ABA 5: LICENÇAS E RISCOS -->
+    <!-- ============================================ -->
+    <section id="licensesTab" class="tab-content" style="display:none">
+      <div class="page-title-block">
+        <h1 class="page-title">Licenças e Riscos</h1>
+        <p class="page-subtitle">Licenças ativas por escola e matrículas vencidas ainda ativas (janela de 30 dias).</p>
+      </div>
+      <div class="kpi-row lic-kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-icon green">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></svg>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-label">Teto consumido</span>
+            <span class="kpi-value" id="licKpiTeto">-</span>
+            <span class="kpi-sub" id="licKpiTetoSub">teto global de 200</span>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon gold">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 14 14" /></svg>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-label">Em risco</span>
+            <span class="kpi-value" id="licKpiRisco">-</span>
+            <span class="kpi-sub">vencidas ainda ativas</span>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon rose">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-label">Bloqueadas</span>
+            <span class="kpi-value" id="licKpiBloqueadas">-</span>
+            <span class="kpi-sub" id="licKpiBloqueadasSub">já desfeitas</span>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-label">Não matriculados</span>
+            <span class="kpi-value" id="licKpiSemMat">-</span>
+            <span class="kpi-sub">base sem vínculo</span>
+          </div>
+        </div>
+      </div>
+      <div class="kpi-row" id="licSchoolsRow" style="margin-top:16px;"></div>
+      <div class="preview-table-card">
+        <div class="preview-table-header">
+          <div>
+            <h3>Matrículas monitoradas</h3>
+            <p>Selecione as matrículas vencidas e desfaça em lote — cada desmatrícula libera 1 licença. Datas com * são o dia do cadastro no banco.</p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-ghost" id="licBatchRenew">Renovar selecionadas +30d</button>
+            <button type="button" class="btn-coral" id="licBatchWithdraw">Desmatricular selecionadas</button>
+            <button type="button" class="btn-ghost" id="licExportBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Exportar CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="preview-toolbar">
+          <div class="preview-search-wrapper">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input type="text" id="licSearchInput" placeholder="Buscar por nome, e-mail ou curso...">
+          </div>
+          <div class="preview-filters" id="licChips">
+            <button type="button" class="filter-chip active" data-lic-filter="all">Todas (<span id="licCountAll">0</span>)</button>
+            <button type="button" class="filter-chip" data-lic-filter="risk">Em risco (<span id="licCountRisk">0</span>)</button>
+            <button type="button" class="filter-chip" data-lic-filter="active">Ativas (<span id="licCountActive">0</span>)</button>
+            <button type="button" class="filter-chip" data-lic-filter="blocked">Bloqueadas (<span id="licCountBlocked">0</span>)</button>
+            <button type="button" class="filter-chip" data-lic-filter="none">Não matriculados (<span id="licCountNone">0</span>)</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+          <div class="form-group" style="margin:0;min-width:240px;"><label class="form-label">Escola</label><div class="select-wrapper"><select id="licSchoolSelect"></select></div></div>
+          <div class="form-group" style="margin:0;align-self:end;"><span id="licMeta" style="font-size:12px;color:var(--graphite-muted)"></span></div>
+        </div>
+
+        <div id="licError" class="feedback-box error" style="display:none"></div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:36px;"><input type="checkbox" id="licSelectAll" aria-label="Selecionar todas"></th>
+                <th>Estudante</th>
+                <th>Curso</th>
+                <th>Escola</th>
+                <th title="Dia em que o cadastro foi criado no banco da Hotscool. Sem registro local de matrícula, é essa a data exibida (*)">Cadastro em</th>
+                <th>Dias restantes</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="licTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="form-footer">
+          <span class="form-footer-note" id="licSelectedCount">Nenhuma matrícula selecionada</span>
+          <div class="form-footer-actions" style="align-items:center;">
+            <label class="form-label" for="licPageSize" style="margin:0;">Exibir</label>
+            <div class="select-wrapper"><select id="licPageSize">
+              <option value="20" selected>20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select></div>
+          </div>
+        </div>
+        <div class="table-pagination" id="licPagination"></div>
+        <div id="licBatchFeedback" class="feedback-box" style="display:none;margin-top:12px;"></div>
+      </div>
+    </section>
+
     <!-- FOOTER -->
     <footer class="app-footer">
-      <p>Consistem LMS &copy; 2026</p>
+      <p>Consistem LMS &copy; 2026 <span id="appVersion" title="Versão da ferramenta (ver VERSION.md)"></span></p>
     </footer>
   </div>
 

@@ -5,9 +5,11 @@ const COOKIE_NAME = 'hotscool_session';
 const SESSION_DURATION_SECONDS = 8 * 60 * 60;
 const EXAMPLE_SECRET = 'gere-uma-chave-aleatoria-com-pelo-menos-32-caracteres';
 const ROLE_PERMISSIONS = {
-  viewer: ['courses:read', 'students:read'],
-  operator: ['courses:read', 'students:read', 'students:write', 'plans:generate'],
+  viewer: ['courses:read', 'students:read', 'avaliacoes:read'],
+  operator: ['courses:read', 'students:read', 'students:write', 'plans:generate', 'avaliacoes:read', 'avaliacoes:write'],
   admin: ['*'],
+  // Gestor: só vê a aba Avaliações, em leitura, restrita às áreas da policy.
+  gestor: ['avaliacoes:read'],
 };
 
 function getSecret() {
@@ -33,7 +35,12 @@ export function getAuthorization(email) {
     ? '*'
     : [...new Set(entry.schools.filter(Number.isSafeInteger).filter((id) => id >= 0))];
   if (schools !== '*' && schools.length === 0) return null;
-  return { role: entry.role, schools, permissions: ROLE_PERMISSIONS[entry.role] };
+  // Áreas: null = todas (educação). Gestor precisa de pelo menos uma área, senão não entra.
+  const areas = Array.isArray(entry.areas)
+    ? [...new Set(entry.areas.map((a) => String(a).trim()).filter(Boolean))]
+    : null;
+  if (entry.role === 'gestor' && (!areas || areas.length === 0)) return null;
+  return { role: entry.role, schools, areas, permissions: ROLE_PERMISSIONS[entry.role] };
 }
 
 export function isAuthConfigured() {

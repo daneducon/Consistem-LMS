@@ -8,6 +8,7 @@ import authGoogleHandler from './api/auth/google.js';
 import authSessionHandler from './api/auth/session.js';
 import authLogoutHandler from './api/auth/logout.js';
 import lessonAiHandler from './api/lesson-ai.js';
+import licensesHandler from './api/licenses.js';
 
 const app = express();
 const PORT = 3001;
@@ -62,6 +63,16 @@ app.all('/api/auth/google', authGoogleHandler);
 app.all('/api/auth/session', authSessionHandler);
 app.all('/api/auth/logout', authLogoutHandler);
 app.all('/api/lesson-ai', lessonAiHandler);
+app.all('/api/licenses', async (req, res) => {
+  try {
+    await licensesHandler(req, res);
+  } catch (error) {
+    console.error('Erro no endpoint /api/licenses:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Erro no servidor ao computar licenças' });
+    }
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Backend rodando em http://localhost:${PORT}`);
