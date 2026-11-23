@@ -888,8 +888,8 @@ function renderLearningProgress(courses) {
     return;
   }
 
-  // Máximo de 5 barras: os 5 primeiros cursos, na ordem recebida da Hotscool (mais recentes primeiro).
-  chart.innerHTML = courses.slice(0, 5).map((course) => {
+  // Máximo de 6 barras: os 6 primeiros cursos, na ordem recebida da Hotscool (mais recentes primeiro).
+  chart.innerHTML = courses.slice(0, 6).map((course) => {
     const progress = Math.min(100, Math.max(0, course.percentual || 0));
     return `
       <div class="chart-bar-item" title="${escapeHtml(course.titulo_curso)}: ${progress}%">
