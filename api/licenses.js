@@ -4,6 +4,7 @@
 // Risco = dias restantes < 0 (janela de 30 dias da matrícula) E acesso ativo:
 // deveria ter sido desfeita/bloqueada. Ação é sempre manual (1 clique).
 import avaliacoesHandler from '../lib/avaliacoes.js';
+import relatorioCursoHandler from '../lib/relatorio-curso.js';
 import { filterAuthorizedSchools, requirePermission } from './auth-utils.js';
 import { applyRateLimit, requireTrustedGetRequest } from './security.js';
 import {
@@ -232,6 +233,8 @@ export function invalidateLicensesCache(apiKey) {
 export default async function handler(req, res) {
   // Mesma função serverless, para caber no limite de funções do plano: ?view=avaliacoes entrega a aba Avaliações.
   if (req.query?.view === 'avaliacoes') return avaliacoesHandler(req, res);
+  // ?view=relatorio-curso entrega a aba Relatório por curso (mesma função, pelo mesmo motivo).
+  if (req.query?.view === 'relatorio-curso') return relatorioCursoHandler(req, res);
 
   const authenticatedUser = await requirePermission(req, res, 'students:read');
   if (!authenticatedUser) return;

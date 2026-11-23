@@ -2385,68 +2385,68 @@ body.report-open { overflow: hidden; }
 #searchTab .subtabs-right { width: 100%; justify-content: space-between; padding-top: var(--space-16); }
 #searchTab .subtabs-right .btn-ghost-sm { border: var(--border-width-control) solid var(--border); background: var(--surface-default); color: var(--text-default); border-radius: var(--r-8); min-height: var(--control-sm); padding: 0 var(--space-16); }
 /* ---------- AVALIAÇÕES · padrão DS Consistem (respiro 40/32/24, tokens) ---------- */
-#avaliacoesTab .avl-filter { padding: var(--space-24); margin-bottom: var(--space-32); background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); gap: var(--space-24); align-items: flex-end; }
-#avaliacoesTab .avl-filter__field span { font-size: var(--fs-12); font-weight: var(--fw-semibold); color: var(--text-secondary); letter-spacing: var(--tracking-normal); }
-#avaliacoesTab .avl-filter__field select, #avaliacoesTab .avl-chips, #avaliacoesTab .avl-multi__summary { border-color: var(--border-control); border-radius: var(--r-8); min-height: var(--control-md); }
-#avaliacoesTab .avl-chips:focus-within, #avaliacoesTab .avl-filter__field select:focus { border-color: var(--focus-ring); box-shadow: 0 0 0 var(--border-width-focus) var(--surface-default), 0 0 0 4px var(--focus-ring); }
-#avaliacoesTab .avl-filter__check { min-height: var(--control-md); font-size: var(--fs-14); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-filter { padding: var(--space-24); margin-bottom: var(--space-32); background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); gap: var(--space-24); align-items: flex-end; }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-filter__field span { font-size: var(--fs-12); font-weight: var(--fw-semibold); color: var(--text-secondary); letter-spacing: var(--tracking-normal); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-filter__field select, :is(#avaliacoesTab, #relatorioCursoTab) .avl-chips, :is(#avaliacoesTab, #relatorioCursoTab) .avl-multi__summary { border-color: var(--border-control); border-radius: var(--r-8); min-height: var(--control-md); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-chips:focus-within, :is(#avaliacoesTab, #relatorioCursoTab) .avl-filter__field select:focus { border-color: var(--focus-ring); box-shadow: 0 0 0 var(--border-width-focus) var(--surface-default), 0 0 0 4px var(--focus-ring); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-filter__check { min-height: var(--control-md); font-size: var(--fs-14); }
 
-#avaliacoesTab .avl-dashboard { gap: var(--space-32); margin-bottom: var(--space-40); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-dashboard { gap: var(--space-32); margin-bottom: var(--space-40); }
 /* Indicadores em cards, como no Figma: ícone, título, valor e subtítulo; Aprovação em card escuro. */
-#avaliacoesTab .avl-kpis { gap: var(--space-16); padding: 0; background: none; border: 0; }
-#avaliacoesTab .avl-kpi { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-4); padding: var(--space-20); background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; overflow: visible; }
-#avaliacoesTab .avl-kpi::before { display: none; }
-#avaliacoesTab .avl-kpi__icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin-bottom: var(--space-8); border-radius: 10px; background: var(--surface-alt); color: var(--text-default); }
-#avaliacoesTab .avl-kpi__label { font-size: var(--fs-11); font-weight: var(--fw-semibold); color: var(--accent-highlight); letter-spacing: 0.02em; text-transform: uppercase; }
-#avaliacoesTab .avl-kpi__value { font-size: var(--fs-24); font-weight: var(--fw-semibold); line-height: var(--lh-normal); letter-spacing: var(--tracking-normal); }
-#avaliacoesTab .avl-kpi__sub { font-size: var(--fs-12); color: var(--text-secondary); }
-#avaliacoesTab .avl-kpi--dark { background: var(--surface-inverse); border-color: var(--surface-inverse); }
-#avaliacoesTab .avl-kpi--dark .avl-kpi__icon { background: var(--accent-warm); color: var(--surface-inverse); }
-#avaliacoesTab .avl-kpi--dark .avl-kpi__label { color: var(--accent-warm); }
-#avaliacoesTab .avl-kpi--dark .avl-kpi__value { color: var(--text-inverse); }
-#avaliacoesTab .avl-kpi--dark .avl-kpi__sub { color: var(--text-inverse-secondary); }
-#avaliacoesTab .avl-kpi--coral .avl-kpi__icon { color: var(--accent-highlight); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-kpis { gap: var(--space-16); padding: 0; background: none; border: 0; }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-kpi { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-4); padding: var(--space-20); background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; overflow: visible; }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-kpi::before { display: none; }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-kpi__icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin-bottom: var(--space-8); border-radius: 10px; background: var(--surface-alt); color: var(--text-default); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-kpi__label { font-size: var(--fs-11); font-weight: var(--fw-semibold); color: var(--accent-highlight); letter-spacing: 0.02em; text-transform: uppercase; }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-kpi__value { font-size: var(--fs-24); font-weight: var(--fw-semibold); line-height: var(--lh-normal); letter-spacing: var(--tracking-normal); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-kpi__sub { font-size: var(--fs-12); color: var(--text-secondary); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-kpi--dark { background: var(--surface-inverse); border-color: var(--surface-inverse); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-kpi--dark .avl-kpi__icon { background: var(--accent-warm); color: var(--surface-inverse); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-kpi--dark .avl-kpi__label { color: var(--accent-warm); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-kpi--dark .avl-kpi__value { color: var(--text-inverse); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-kpi--dark .avl-kpi__sub { color: var(--text-inverse-secondary); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-kpi--coral .avl-kpi__icon { color: var(--accent-highlight); }
 
-#avaliacoesTab .avl-grid { gap: var(--space-32) var(--space-40); }
-#avaliacoesTab .avl-card { padding: var(--space-24); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; }
-#avaliacoesTab .avl-card__title { font-size: var(--fs-16); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-normal); line-height: var(--lh-normal); }
-#avaliacoesTab .avl-card__sub { font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-24); }
-#avaliacoesTab .avl-bar__track { background: var(--surface-hover); }
-#avaliacoesTab .avl-section-title { font-size: var(--fs-20); font-weight: var(--fw-regular); letter-spacing: var(--tracking-tight); margin: 0 0 var(--space-16); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-grid { gap: var(--space-32) var(--space-40); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-card { padding: var(--space-24); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-card__title { font-size: var(--fs-16); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-normal); line-height: var(--lh-normal); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-card__sub { font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-24); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-bar__track { background: var(--surface-hover); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-section-title { font-size: var(--fs-20); font-weight: var(--fw-regular); letter-spacing: var(--tracking-tight); margin: 0 0 var(--space-16); }
 
 /* Lista de alunos: barra de busca e ações alinhadas, sem estilos inline */
 .avl-toolbar { display: flex; gap: var(--space-12); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-16); }
 .avl-toolbar__search { flex: 1; min-width: 220px; min-height: var(--control-md); padding: 0 var(--space-16); border-radius: var(--r-8); border: var(--border-width-control) solid var(--border-control); font: var(--fw-regular) var(--fs-14) var(--font); color: var(--text-default); background: var(--surface-default); }
 .avl-toolbar__search:focus { outline: none; border-color: var(--focus-ring); box-shadow: 0 0 0 var(--border-width-focus) var(--surface-default), 0 0 0 4px var(--focus-ring); }
-#avaliacoesTab .table-container { background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; overflow-x: hidden; }
+:is(#avaliacoesTab, #relatorioCursoTab) .table-container { background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; overflow-x: hidden; }
 
 /* Abas de situação (Todas, Ativas, Bloqueadas): pílulas, a ativa em grafite escuro, como no Figma. */
-#avaliacoesTab .avl-tabs { display: flex; flex-wrap: wrap; gap: var(--space-8); margin-bottom: var(--space-16); }
-#avaliacoesTab .avl-tab { min-height: 36px; padding: 0 var(--space-16); border-radius: 999px; border: var(--border-width-control) solid var(--border-control); background: var(--surface-default); color: var(--text-default); font: var(--fw-regular) var(--fs-14) var(--font); cursor: pointer; }
-#avaliacoesTab .avl-tab:hover { border-color: var(--border-control-hover); background: var(--surface-alt); }
-#avaliacoesTab .avl-tab.is-active { background: var(--surface-inverse); border-color: var(--surface-inverse); color: var(--text-inverse); }
-#avaliacoesTab .avl-tab:focus-visible { outline: var(--border-width-focus) solid var(--focus-ring); outline-offset: 2px; }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-tabs { display: flex; flex-wrap: wrap; gap: var(--space-8); margin-bottom: var(--space-16); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-tab { min-height: 36px; padding: 0 var(--space-16); border-radius: 999px; border: var(--border-width-control) solid var(--border-control); background: var(--surface-default); color: var(--text-default); font: var(--fw-regular) var(--fs-14) var(--font); cursor: pointer; }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-tab:hover { border-color: var(--border-control-hover); background: var(--surface-alt); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-tab.is-active { background: var(--surface-inverse); border-color: var(--surface-inverse); color: var(--text-inverse); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-tab:focus-visible { outline: var(--border-width-focus) solid var(--focus-ring); outline-offset: 2px; }
 
 /* Tabela da lista de alunos: cabe na largura da tela (sem rolagem lateral), colunas centralizadas como no Figma. */
-#avaliacoesTab .data-table { table-layout: fixed; width: 100%; min-width: 0; }
-#avaliacoesTab .data-table th, #avaliacoesTab .data-table td { white-space: normal; overflow-wrap: anywhere; }
-#avaliacoesTab .data-table th:nth-child(1), #avaliacoesTab .data-table td:nth-child(1) { width: 27%; }
-#avaliacoesTab .data-table th:nth-child(2), #avaliacoesTab .data-table td:nth-child(2) { width: 16%; }
-#avaliacoesTab .data-table th:nth-child(3), #avaliacoesTab .data-table td:nth-child(3) { width: 21%; }
-#avaliacoesTab .data-table th:nth-child(4), #avaliacoesTab .data-table td:nth-child(4) { width: 10%; }
-#avaliacoesTab .data-table th:nth-child(5), #avaliacoesTab .data-table td:nth-child(5) { width: 14%; }
-#avaliacoesTab .data-table th:nth-child(6), #avaliacoesTab .data-table td:nth-child(6) { width: 12%; }
-#avaliacoesTab .data-table th.col-center, #avaliacoesTab .data-table td.col-center { text-align: center; }
-#avaliacoesTab .avl-pill--ok { background: var(--feedback-positive); color: var(--text-inverse); }
-#avaliacoesTab .avl-pill--rep { background: var(--accent-highlight); color: var(--text-inverse); }
-#avaliacoesTab .avl-pill--vazia { background: var(--surface-alt); color: var(--text-secondary); }
-#avaliacoesTab .avl-last-grade.is-ok { color: var(--feedback-positive); }
-#avaliacoesTab .avl-last-grade.is-rep { color: var(--accent-highlight); }
+:is(#avaliacoesTab, #relatorioCursoTab) .data-table { table-layout: fixed; width: 100%; min-width: 0; }
+:is(#avaliacoesTab, #relatorioCursoTab) .data-table th, :is(#avaliacoesTab, #relatorioCursoTab) .data-table td { white-space: normal; overflow-wrap: anywhere; }
+:is(#avaliacoesTab, #relatorioCursoTab) .data-table th:nth-child(1), :is(#avaliacoesTab, #relatorioCursoTab) .data-table td:nth-child(1) { width: 27%; }
+:is(#avaliacoesTab, #relatorioCursoTab) .data-table th:nth-child(2), :is(#avaliacoesTab, #relatorioCursoTab) .data-table td:nth-child(2) { width: 16%; }
+:is(#avaliacoesTab, #relatorioCursoTab) .data-table th:nth-child(3), :is(#avaliacoesTab, #relatorioCursoTab) .data-table td:nth-child(3) { width: 21%; }
+:is(#avaliacoesTab, #relatorioCursoTab) .data-table th:nth-child(4), :is(#avaliacoesTab, #relatorioCursoTab) .data-table td:nth-child(4) { width: 10%; }
+:is(#avaliacoesTab, #relatorioCursoTab) .data-table th:nth-child(5), :is(#avaliacoesTab, #relatorioCursoTab) .data-table td:nth-child(5) { width: 14%; }
+:is(#avaliacoesTab, #relatorioCursoTab) .data-table th:nth-child(6), :is(#avaliacoesTab, #relatorioCursoTab) .data-table td:nth-child(6) { width: 12%; }
+:is(#avaliacoesTab, #relatorioCursoTab) .data-table th.col-center, :is(#avaliacoesTab, #relatorioCursoTab) .data-table td.col-center { text-align: center; }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-pill--ok { background: var(--feedback-positive); color: var(--text-inverse); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-pill--rep { background: var(--accent-highlight); color: var(--text-inverse); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-pill--vazia { background: var(--surface-alt); color: var(--text-secondary); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-last-grade.is-ok { color: var(--feedback-positive); }
+:is(#avaliacoesTab, #relatorioCursoTab) .avl-last-grade.is-rep { color: var(--accent-highlight); }
 
 @media (max-width: 1100px) {
-  #avaliacoesTab .avl-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-24); }
+  :is(#avaliacoesTab, #relatorioCursoTab) .avl-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-24); }
 }
-#avaliacoesTab [hidden] { display: none !important; }
+:is(#avaliacoesTab, #relatorioCursoTab) [hidden] { display: none !important; }
 
 /* =====================================================================
    VARREDURA DS CONSISTEM · especificações lidas dos componentes da biblioteca
@@ -2662,3 +2662,10 @@ body.report-open { overflow: hidden; }
 #registerCoursesCard .course-check-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #registerCoursesCard .course-check-duration { display: inline-flex; align-items: center; flex-shrink: 0; height: 18px; padding: 0 var(--space-8); border-radius: var(--r-full, 999px); background: var(--accent-highlight); color: var(--text-inverse); font-size: 11px; font-weight: var(--fw-semibold); line-height: 1; }
 #searchTab .course-sort-select:focus-visible { outline: var(--border-width-focus) solid var(--focus-ring); outline-offset: 2px; }
+
+/* Relatório por curso: barra de progresso dos alunos na tabela (padrão de Avaliações). */
+#relatorioCursoTab .rel-progress { display: flex; align-items: center; gap: var(--space-8); }
+#relatorioCursoTab .rel-progress__bar { flex: 1; max-width: 180px; height: 8px; border-radius: 4px; background: var(--surface-hover); overflow: hidden; }
+#relatorioCursoTab .rel-progress__bar span { display: block; height: 100%; background: var(--text-default); }
+#relatorioCursoTab .rel-progress__pct { min-width: 40px; font-size: var(--fs-14); color: var(--text-default); }
+#relatorioCursoTab select:disabled { opacity: 0.6; cursor: not-allowed; }

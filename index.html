@@ -91,6 +91,14 @@
           </svg>
           <span class="sidebar-label">Licenças e riscos</span>
         </button>
+        <button type="button" class="sidebar-btn" data-sidebar="relatorioCurso" title="Relatório por curso" aria-label="Relatório por curso">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <rect x="3" y="12" width="4" height="9" />
+            <rect x="10" y="7" width="4" height="14" />
+            <rect x="17" y="3" width="4" height="18" />
+          </svg>
+          <span class="sidebar-label">Relatório por curso</span>
+        </button>
         <button type="button" class="sidebar-btn" data-sidebar="avaliacoes" title="Avaliações" aria-label="Avaliações">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
             <path d="M9 11l3 3L22 4" />
@@ -1149,6 +1157,54 @@
     <!-- ============================================ -->
     <!-- ABA 6: AVALIAÇÕES (quiz de Fundamentos de IA) -->
     <!-- ============================================ -->
+    <section id="relatorioCursoTab" class="tab-content" style="display:none">
+      <div class="page-title-block">
+        <h1 class="page-title">Relatório por curso</h1>
+        <p class="page-subtitle">Escolha a escola e o curso para ver os indicadores e a lista de alunos. Exporte em PDF ou CSV.</p>
+      </div>
+      <div class="avl-filter">
+        <label class="avl-filter__field">
+          <span>Escola</span>
+          <select id="relEscola">
+            <option value="">Selecione a escola</option>
+          </select>
+        </label>
+        <label class="avl-filter__field avl-filter__field--wide">
+          <span>Curso</span>
+          <select id="relCurso" disabled>
+            <option value="">Selecione o curso</option>
+          </select>
+        </label>
+      </div>
+      <div id="relKpis" class="avl-kpis" aria-live="polite"></div>
+      <h2 class="avl-section-title">Alunos do curso</h2>
+      <div class="avl-toolbar">
+        <input id="relBusca" class="avl-toolbar__search" type="search" placeholder="Buscar por nome ou e-mail" />
+        <button type="button" class="btn-secondary-outline" id="relPdfBtn">Gerar PDF</button>
+        <button type="button" class="btn-secondary-outline" id="relCsvBtn">Exportar CSV</button>
+      </div>
+      <div class="avl-tabs" role="group" aria-label="Filtrar alunos por situação">
+        <button type="button" class="avl-tab is-active" data-rel-filter="todos" aria-pressed="true">Todos (<span id="relCountTodos">0</span>)</button>
+        <button type="button" class="avl-tab" data-rel-filter="concluidos" aria-pressed="false">Concluídos (<span id="relCountConcluidos">0</span>)</button>
+        <button type="button" class="avl-tab" data-rel-filter="bloqueados" aria-pressed="false">Bloqueados (<span id="relCountBloqueados">0</span>)</button>
+      </div>
+      <p id="relStatus" class="page-subtitle" role="status"></p>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Aluno</th>
+              <th>Progresso</th>
+              <th class="col-center">Aulas vistas</th>
+              <th class="col-center">Último login</th>
+              <th class="col-center">Situação</th>
+            </tr>
+          </thead>
+          <tbody id="relTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
     <section id="avaliacoesTab" class="tab-content" style="display:none">
       <div class="page-title-block">
         <h1 class="page-title">Avaliações</h1>

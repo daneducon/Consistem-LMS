@@ -2,6 +2,7 @@ import { initializeLessonPlan, refreshLessonPlanPreview } from './lesson-plan.js
 import { APP_VERSION } from './version.js';
 import './avaliacoes.css';
 import { buildCsv, buildScope, reportPages } from './avaliacoes-relatorio.js';
+import { ensureRelatorioCursoLoaded } from './relatorio-curso-tela.js';
 import {
   barRows,
   kpiCardsFor,
@@ -192,6 +193,7 @@ const tabNames = {
   csv: 'Matricula em Lote (CSV)',
   lesson: 'Gerador de Plano de Aula',
   licenses: 'Licenças e Riscos',
+  relatorioCurso: 'Relatório por curso',
   avaliacoes: 'Avaliações',
 };
 
@@ -212,6 +214,7 @@ function switchTab(target) {
   else if (target === 'csv') ensureCsvSchoolsLoaded();
   else if (target === 'lesson') requestAnimationFrame(refreshLessonPlanPreview);
   else if (target === 'licenses') ensureLicensesLoaded();
+  else if (target === 'relatorioCurso') ensureRelatorioCursoLoaded();
   else if (target === 'avaliacoes') ensureAvaliacoesLoaded();
 }
 
