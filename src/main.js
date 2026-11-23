@@ -53,10 +53,15 @@ function showLoginError(message) {
   loginError.style.display = 'block';
 }
 
+// Função da pessoa no sistema (vem do perfil de acesso no servidor), exibida no header no lugar do e-mail.
+const ROLE_LABELS = { admin: 'Administrador', operator: 'Operador', viewer: 'Visualizador', gestor: 'Gestor de área' };
+
 function showAuthenticatedApp(user) {
   currentUserRole = user.role || null;
-  if (authenticatedUserName) authenticatedUserName.textContent = user.name || 'Usuario autorizado';
-  if (authenticatedUserEmail) authenticatedUserEmail.textContent = user.email || '';
+  // Só os dois primeiros nomes no header.
+  const primeirosNomes = String(user.name || '').trim().split(/\s+/).slice(0, 2).join(' ');
+  if (authenticatedUserName) authenticatedUserName.textContent = primeirosNomes || 'Usuario autorizado';
+  if (authenticatedUserEmail) authenticatedUserEmail.textContent = ROLE_LABELS[user.role] || '';
   if (auditorName) auditorName.textContent = user.name || 'Usuário autorizado';
   if (auditorEmail) auditorEmail.textContent = user.email || '';
   if (user.role === 'viewer') {
