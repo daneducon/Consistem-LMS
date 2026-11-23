@@ -155,7 +155,15 @@ relPdfBtn.addEventListener('click', async () => {
   palco.style.cssText = 'position:fixed;left:-10000px;top:0;background:#ffffff;';
   document.body.appendChild(palco);
   try {
-    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
+    let bibliotecas;
+    try {
+      bibliotecas = await Promise.all([import('html2canvas'), import('jspdf')]);
+    } catch {
+      // Arquivo de uma versão anterior: a aba está desatualizada depois de um novo deploy.
+      relStatus.textContent = 'Esta página está desatualizada. Recarregue com Ctrl+F5 e gere o PDF de novo.';
+      return;
+    }
+    const [{ default: html2canvas }, { jsPDF }] = bibliotecas;
     palco.innerHTML = relatorioCursoPages({
       curso: dados.curso,
       resumo: dados.resumo,
