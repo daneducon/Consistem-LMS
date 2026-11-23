@@ -1188,6 +1188,11 @@
         <button type="button" class="btn-secondary-outline" id="avaliacoesPdfBtn">Gerar PDF</button>
         <button type="button" class="btn-secondary-outline" id="avaliacoesCsvBtn">Exportar CSV</button>
       </div>
+      <div class="avl-tabs" role="group" aria-label="Filtrar alunos por situação">
+        <button type="button" class="avl-tab is-active" data-status-filter="todas" aria-pressed="true">Todas (<span id="avlCountTodas">0</span>)</button>
+        <button type="button" class="avl-tab" data-status-filter="ativas" aria-pressed="false">Ativas (<span id="avlCountAtivas">0</span>)</button>
+        <button type="button" class="avl-tab" data-status-filter="bloqueadas" aria-pressed="false">Bloqueadas (<span id="avlCountBloqueadas">0</span>)</button>
+      </div>
       <p id="avaliacoesStatus" class="page-subtitle" role="status"></p>
       <div class="table-container">
         <table class="data-table">

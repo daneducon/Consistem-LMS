@@ -2418,7 +2418,30 @@ body.report-open { overflow: hidden; }
 .avl-toolbar { display: flex; gap: var(--space-12); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-16); }
 .avl-toolbar__search { flex: 1; min-width: 220px; min-height: var(--control-md); padding: 0 var(--space-16); border-radius: var(--r-8); border: var(--border-width-control) solid var(--border-control); font: var(--fw-regular) var(--fs-14) var(--font); color: var(--text-default); background: var(--surface-default); }
 .avl-toolbar__search:focus { outline: none; border-color: var(--focus-ring); box-shadow: 0 0 0 var(--border-width-focus) var(--surface-default), 0 0 0 4px var(--focus-ring); }
-#avaliacoesTab .table-container { background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; }
+#avaliacoesTab .table-container { background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; overflow-x: hidden; }
+
+/* Abas de situação (Todas, Ativas, Bloqueadas): pílulas, a ativa em grafite escuro, como no Figma. */
+#avaliacoesTab .avl-tabs { display: flex; flex-wrap: wrap; gap: var(--space-8); margin-bottom: var(--space-16); }
+#avaliacoesTab .avl-tab { min-height: 36px; padding: 0 var(--space-16); border-radius: 999px; border: var(--border-width-control) solid var(--border-control); background: var(--surface-default); color: var(--text-default); font: var(--fw-regular) var(--fs-14) var(--font); cursor: pointer; }
+#avaliacoesTab .avl-tab:hover { border-color: var(--border-control-hover); background: var(--surface-alt); }
+#avaliacoesTab .avl-tab.is-active { background: var(--surface-inverse); border-color: var(--surface-inverse); color: var(--text-inverse); }
+#avaliacoesTab .avl-tab:focus-visible { outline: var(--border-width-focus) solid var(--focus-ring); outline-offset: 2px; }
+
+/* Tabela da lista de alunos: cabe na largura da tela (sem rolagem lateral), colunas centralizadas como no Figma. */
+#avaliacoesTab .data-table { table-layout: fixed; width: 100%; min-width: 0; }
+#avaliacoesTab .data-table th, #avaliacoesTab .data-table td { white-space: normal; overflow-wrap: anywhere; }
+#avaliacoesTab .data-table th:nth-child(1), #avaliacoesTab .data-table td:nth-child(1) { width: 27%; }
+#avaliacoesTab .data-table th:nth-child(2), #avaliacoesTab .data-table td:nth-child(2) { width: 16%; }
+#avaliacoesTab .data-table th:nth-child(3), #avaliacoesTab .data-table td:nth-child(3) { width: 21%; }
+#avaliacoesTab .data-table th:nth-child(4), #avaliacoesTab .data-table td:nth-child(4) { width: 10%; }
+#avaliacoesTab .data-table th:nth-child(5), #avaliacoesTab .data-table td:nth-child(5) { width: 14%; }
+#avaliacoesTab .data-table th:nth-child(6), #avaliacoesTab .data-table td:nth-child(6) { width: 12%; }
+#avaliacoesTab .data-table th.col-center, #avaliacoesTab .data-table td.col-center { text-align: center; }
+#avaliacoesTab .avl-pill--ok { background: var(--feedback-positive); color: var(--text-inverse); }
+#avaliacoesTab .avl-pill--rep { background: var(--accent-highlight); color: var(--text-inverse); }
+#avaliacoesTab .avl-pill--vazia { background: var(--surface-alt); color: var(--text-secondary); }
+#avaliacoesTab .avl-last-grade.is-ok { color: var(--feedback-positive); }
+#avaliacoesTab .avl-last-grade.is-rep { color: var(--accent-highlight); }
 
 @media (max-width: 1100px) {
   #avaliacoesTab .avl-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-24); }

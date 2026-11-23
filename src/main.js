@@ -2315,26 +2315,55 @@ function avaliacaoRowHtml(item) {
       acao = `<button type="button" class="btn-coral" data-liberar-aluno="${item.alunoId}" data-liberar-curso="${item.courseId}">Liberar</button>`;
     }
   }
-  const aprovada = item.ultimaNota !== null && item.ultimaNota !== undefined && Number(item.ultimaNota) > 7;
-  const nota = item.ultimaNota === null || item.ultimaNota === undefined ? '-' : escapeHtml(item.ultimaNota);
+  const temNota = item.ultimaNota !== null && item.ultimaNota !== undefined;
+  const aprovada = temNota && Number(item.ultimaNota) > 7;
+  const reprovada = temNota && !aprovada;
+  const nota = temNota ? Number(item.ultimaNota).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : '-';
+  // Nome do curso quando a API informar; sem ele, mostra o código, sem inventar título.
+  const curso = item.cursoNome || item.courseId;
   return `<tr>
     <td><strong>${escapeHtml(item.nome)}</strong>${item.cargo ? `<br><small>${escapeHtml(item.cargo)}</small>` : ''}<br><small>${escapeHtml(item.email)}</small></td>
-    <td>${escapeHtml(item.courseId)}</td>
+    <td>${escapeHtml(curso)}</td>
     <td class="avl-attempts">${tentativasPills(item)}</td>
-    <td class="col-center"><span class="avl-last-grade${aprovada ? ' is-ok' : ''}">${nota}</span></td>
+    <td class="col-center"><span class="avl-last-grade${aprovada ? ' is-ok' : reprovada ? ' is-rep' : ''}">${nota}</span></td>
     <td class="col-center avl-situacao">${situacaoPill(item)}${item.liberadoPor ? `<small class="avl-status__meta">por ${escapeHtml(item.liberadoPor)}</small>` : ''}</td>
     <td class="col-center">${acao}</td>
   </tr>`;
 }
 
+// Abas de situação (padrão Figma): Todas, Ativas e Bloqueadas (bloqueadas inclui esgotadas).
+let avaliacoesStatusFiltro = 'todas';
+const estaBloqueada = (item) => item.situacao === 'bloqueado' || item.situacao === 'esgotado';
+
 function renderAvaliacoes() {
   const term = (avaliacoesSearch?.value || '').trim().toLowerCase();
-  const rows = escopoAvaliacoes().items.filter((item) => !term || `${item.nome} ${item.email}`.toLowerCase().includes(term));
+  const todos = escopoAvaliacoes().items;
+  const ativas = todos.filter((i) => !estaBloqueada(i)).length;
+  const bloqueadas = todos.length - ativas;
+  document.getElementById('avlCountTodas').textContent = String(todos.length);
+  document.getElementById('avlCountAtivas').textContent = String(ativas);
+  document.getElementById('avlCountBloqueadas').textContent = String(bloqueadas);
+  document.querySelectorAll('[data-status-filter]').forEach((btn) => {
+    const ativo = btn.dataset.statusFilter === avaliacoesStatusFiltro;
+    btn.classList.toggle('is-active', ativo);
+    btn.setAttribute('aria-pressed', String(ativo));
+  });
+
+  const rows = todos
+    .filter((i) => avaliacoesStatusFiltro === 'todas' || (avaliacoesStatusFiltro === 'ativas' ? !estaBloqueada(i) : estaBloqueada(i)))
+    .filter((item) => !term || `${item.nome} ${item.email}`.toLowerCase().includes(term));
   avaliacoesTbody.innerHTML = rows.length
     ? rows.map(avaliacaoRowHtml).join('')
     : '<tr><td colspan="6">Nenhum aluno encontrado.</td></tr>';
   avaliacoesStatus.textContent = `${rows.length} de ${avaliacoesItems.length} matrículas`;
 }
+
+document.querySelectorAll('[data-status-filter]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    avaliacoesStatusFiltro = btn.dataset.statusFilter;
+    renderAvaliacoes();
+  });
+});
 
 function atualizarTudo() {
   renderAvaliacoesDashboard();
