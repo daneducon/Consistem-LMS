@@ -2649,7 +2649,8 @@ body.report-open { overflow: hidden; }
 #searchTab .kpi-row .kpi-card--dark .kpi-icon { background: var(--accent-warm); color: var(--surface-inverse); }
 #searchTab .kpi-row .kpi-card--dark .kpi-label { color: var(--accent-warm); }
 #searchTab .kpi-row .kpi-card--dark .kpi-value { color: var(--text-inverse); }
-#searchTab .kpi-row .kpi-card--dark .kpi-sub { color: var(--text-inverse-secondary); }
+#searchTab .kpi-row .kpi-card--dark .kpi-sub,
+#searchTab .kpi-row .kpi-card.kpi-card--dark .kpi-data .kpi-sub { color: var(--text-inverse); }
 #searchTab .kpi-row .kpi-card .kpi-sub, #searchTab .kpi-row .kpi-card small { color: var(--text-secondary); }
 /* Espaçamento entre as seções: 32px vindos do gap da coluna, sem margens extras. */
 #searchTab .dashboard-360 > .kpi-row { margin-bottom: 0; }
