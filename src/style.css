@@ -2677,3 +2677,7 @@ body.report-open { overflow: hidden; }
 #relatorioCursoTab .rel-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-16); margin-bottom: var(--space-16); }
 #relatorioCursoTab .rel-section-head .avl-section-title { margin: 0; }
 #relatorioCursoTab .rel-updated { font-size: var(--fs-12); color: var(--text-secondary); white-space: nowrap; }
+
+/* Relatório por curso: mais espaço entre os indicadores e o título "Alunos do curso". */
+#relatorioCursoTab .avl-kpis { margin-bottom: var(--space-40); }
+#relatorioCursoTab .rel-section-head { margin-top: var(--space-16); }
