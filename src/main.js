@@ -200,6 +200,8 @@ function switchTab(target) {
     tc.style.display = isActive ? 'block' : 'none';
   });
   if (breadcrumbPage) breadcrumbPage.textContent = tabNames[target] || '';
+  // Ao trocar de tela, começa sempre pelo topo (senão a nova tela abre no meio da rolagem anterior).
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 
   if (target === 'register') ensureSchoolsLoaded();
   else if (target === 'csv') ensureCsvSchoolsLoaded();
