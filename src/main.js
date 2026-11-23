@@ -1048,20 +1048,21 @@ function renderCoursesList(courses) {
   coursesListContainer.innerHTML = courses.map((c) => {
     const courseId = Number(c.id);
     const isChecked = selectedCourseIds.has(courseId);
-    const duration = c.duracao ? `${escapeHtml(c.duracao)}h` : '';
+    // Carga horária no padrão do Figma: pílula coral logo após o nome, com vírgula decimal (ex.: 0,6h).
+    const horas = Number(c.duracao);
+    const duration = c.duracao && Number.isFinite(horas) ? `${horas.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}h` : '';
     return `
       <label class="course-check-item ${isChecked ? 'selected' : ''}" data-id="${courseId}">
         <input type="checkbox" value="${courseId}" ${isChecked ? 'checked' : ''}>
         <div class="course-check-info">
-          <span class="course-check-name">${escapeHtml(c.nome)}</span>
+          <span class="course-check-name-row">
+            <span class="course-check-name">${escapeHtml(c.nome)}</span>
+            ${duration ? `<span class="course-check-duration">${duration}</span>` : ''}
+          </span>
           <div class="course-check-meta">
             ${c.categoria ? `<span>${escapeHtml(c.categoria)}</span>` : ''}
           </div>
         </div>
-        ${duration ? `<span class="course-check-duration">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          ${duration}
-        </span>` : ''}
       </label>`;
   }).join('');
 
