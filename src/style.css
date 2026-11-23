@@ -2639,7 +2639,8 @@ body.report-open { overflow: hidden; }
 #searchTab .course-sort .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 #searchTab .course-sort { position: relative; display: inline-flex; }
 /* Títulos dos KPIs: coral nos cards de fundo branco; o card escuro mantém o título em âmbar (padrão do PPT). */
-#licensesTab .kpi-card:not(.kpi-card--dark) .kpi-label { color: var(--accent-highlight); }
+/* Licenças: títulos no mesmo padrão de Avaliações e Consulta (escuros; o card escuro mantém âmbar). */
+#licensesTab .kpi-card:not(.kpi-card--dark) .kpi-label { color: var(--text-default); letter-spacing: 0.02em; text-transform: uppercase; }
 /* Consulta do aluno: cards no padrão dos cards de Avaliações (título escuro, ícone em caixa). */
 #searchTab .kpi-row .kpi-card:not(.kpi-card--dark) .kpi-label { color: var(--text-default); letter-spacing: 0.02em; text-transform: uppercase; }
 /* Consulta do aluno: mesmo espaçamento e cards escuros dos KPIs de Avaliações (Desempenho em destaque). */
