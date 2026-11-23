@@ -155,7 +155,7 @@ export function kpiCardsFor(kpis, umaPessoa = null) {
   }
   return [
     kpiCard({ label: 'Pessoas', value: kpis.alunos, sub: 'matrículas no filtro' }),
-    kpiCard({ label: 'Aprovação', value: formatPercent(kpis.taxaAprovacao), sub: 'tentativas concluídas', tone: 'success' }),
+    kpiCard({ label: 'Aprovação', value: formatPercent(kpis.taxaAprovacao), sub: 'tentativas concluídas', tone: 'dark' }),
     kpiCard({ label: 'Nota média', value: formatNumber(kpis.notaMedia), sub: 'de 10', tone: 'gold' }),
     kpiCard({ label: 'Bloqueados ou esgotados', value: kpis.bloqueados, sub: 'precisam de liberação', tone: 'coral' }),
   ].join('');
@@ -182,17 +182,58 @@ export function barRows(rows, { suffix = '', color = COLORS.graphite, max = null
     </div>`).join('');
 }
 
-export function columnChart(rows, { color = COLORS.graphite } = {}) {
+export function columnChart(rows, { color = COLORS.graphite, colorFor = null, cutAt = null } = {}) {
   if (rows.length === 0) return '<p class="avl-empty">Sem dados ainda.</p>';
   const top = Math.max(...rows.map((r) => r.value), 1);
-  return `<div class="avl-columns">${rows.map((row) => `
+  const cut = cutAt === null ? '' : `<span class="avl-cut" style="left:${(cutAt / rows.length) * 100}%"></span>`;
+  return `<div class="avl-columns">${cut}${rows.map((row, i) => {
+    const cor = colorFor ? colorFor(row, i) : color;
+    return `
     <div class="avl-column">
       <span class="avl-column__value">${escapeHtml(row.value)}</span>
       <div class="avl-column__track">
-        <div class="avl-column__fill" style="height:${Math.max(4, Math.round((row.value / top) * 100))}%;background:${color}"></div>
+        <div class="avl-column__fill" style="height:${row.value === 0 ? 0 : Math.max(4, Math.round((row.value / top) * 100))}%;background:${cor}"></div>
       </div>
       <span class="avl-column__label">${escapeHtml(row.label)}</span>
-    </div>`).join('')}</div>`;
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// Resultado por número de tentativa: barra empilhada (reprovadas embaixo, aprovadas em cima).
+export function attemptStackChart(rows) {
+  const totais = rows.map((r) => r.aprovadas + r.reprovadas);
+  const top = Math.max(...totais, 1);
+  if (totais.every((t) => t === 0)) return '<p class="avl-empty">Sem tentativas concluídas ainda.</p>';
+  return `
+    <div class="avl-stack">
+      <div class="avl-stack__cols">${rows.map((r, i) => {
+        const total = totais[i];
+        const altura = total === 0 ? 0 : Math.round((total / top) * 100);
+        const segmentos = total === 0 ? '' : `
+          ${r.reprovadas ? `<span class="avl-stack__seg avl-stack__seg--rep" style="flex:${r.reprovadas}">${r.reprovadas}</span>` : ''}
+          ${r.aprovadas ? `<span class="avl-stack__seg avl-stack__seg--ok" style="flex:${r.aprovadas}">${r.aprovadas}</span>` : ''}`;
+        return `
+        <div class="avl-stack__col">
+          <div class="avl-stack__bar" style="height:${altura}%">${segmentos}</div>
+          <span class="avl-column__label">${escapeHtml(r.label)} tentativa</span>
+        </div>`;
+      }).join('')}</div>
+      <ul class="avl-legend avl-legend--row">
+        <li><span class="avl-dot" style="background:${COLORS.coral}"></span>Reprovadas</li>
+        <li><span class="avl-dot" style="background:${COLORS.success}"></span>Aprovadas</li>
+      </ul>
+    </div>`;
+}
+
+// Sinais de integridade: linhas claras; o sinal mais frequente em coral.
+export function signalList(rows) {
+  if (rows.length === 0) return '<p class="avl-empty">Nenhum evento registrado.</p>';
+  const maior = Math.max(...rows.map((r) => r.value), 0);
+  return `<ul class="avl-signals">${rows.map((row) => `
+    <li class="avl-signal">
+      <span class="avl-signal__label">${escapeHtml(row.label)}</span>
+      <strong class="avl-signal__value${row.value === maior && maior > 0 ? ' avl-signal__value--alert' : ''}">${escapeHtml(row.value)}</strong>
+    </li>`).join('')}</ul>`;
 }
 
 // Notas por tentativa (aluno), com a linha de aprovação em 7.

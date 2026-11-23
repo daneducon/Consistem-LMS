@@ -9,6 +9,8 @@ import {
   computeStats,
   COLORS,
   donutChart,
+  attemptStackChart,
+  signalList,
   formatNumber,
   formatPercent,
   kpiCard,
@@ -2127,9 +2129,6 @@ function renderAvaliacoesDashboard() {
 
   const kpiHtml = kpiCardsFor(kpis, umaPessoa);
 
-  const aprovadas = porNumero.reduce((soma, p) => soma + p.aprovadas, 0);
-  const reprovadas = porNumero.reduce((soma, p) => soma + p.reprovadas, 0);
-
   avaliacoesDashboard.innerHTML = `
     <div class="avl-kpis">${kpiHtml}</div>
     <div class="avl-grid">
@@ -2139,32 +2138,28 @@ function renderAvaliacoesDashboard() {
         ${barRows(modulos.map((m) => ({ label: m.label, value: m.pct })), { suffix: '%', max: 100 })}
       </article>
       <article class="avl-card">
-        <h3 class="avl-card__title">Aprovação</h3>
-        <p class="avl-card__sub">Tentativas concluídas</p>
-        ${donutChart([
-    { key: 'aprovadas', label: 'Aprovadas', value: aprovadas, color: COLORS.success },
-    { key: 'reprovadas', label: 'Reprovadas', value: reprovadas, color: COLORS.coral },
-  ])}
+        <h3 class="avl-card__title">Resultado por tentativa</h3>
+        <p class="avl-card__sub">Aprovações e reprovações em cada número de tentativa</p>
+        ${attemptStackChart(porNumero)}
       </article>
       <article class="avl-card">
         <h3 class="avl-card__title">Distribuição de notas</h3>
         <p class="avl-card__sub">Notas das tentativas concluídas, de 0 a 10</p>
-        ${columnChart(faixas, { color: COLORS.graphite })}
+        ${columnChart(faixas, { colorFor: (_row, i) => (i < 2 ? COLORS.coral : COLORS.graphite), cutAt: 2 })}
+        <ul class="avl-legend avl-legend--row">
+          <li><span class="avl-dot" style="background:${COLORS.coral}"></span>Abaixo de 7 (reprovação)</li>
+          <li><span class="avl-dot" style="background:${COLORS.graphite}"></span>7 ou mais (aprovação)</li>
+        </ul>
       </article>
       <article class="avl-card">
         <h3 class="avl-card__title">Sinais de integridade</h3>
         <p class="avl-card__sub">Eventos registrados durante a prova</p>
-        ${barRows(eventos, { color: COLORS.coral })}
+        ${signalList(eventos)}
       </article>
       <article class="avl-card avl-card--wide">
         <h3 class="avl-card__title">${umaPessoa ? `Evolução de ${escapeHtml(umaPessoa.nome)}` : 'Atividade por dia'}</h3>
         <p class="avl-card__sub">${umaPessoa ? 'Nota de cada tentativa concluída. A linha tracejada marca a aprovação.' : 'Tentativas iniciadas em cada dia'}</p>
         ${umaPessoa ? lineChart(evolucao) : columnChart(atividade, { color: COLORS.graphite })}
-      </article>
-      <article class="avl-card">
-        <h3 class="avl-card__title">Aprovações por tentativa</h3>
-        <p class="avl-card__sub">Quantas pessoas passaram em cada número de tentativa</p>
-        ${columnChart(porNumero.map((p) => ({ label: p.label, value: p.aprovadas })), { color: COLORS.success })}
       </article>
     </div>`;
 }
@@ -2273,8 +2268,25 @@ function resultadoTentativa(t) {
   return escapeHtml(partes.join(' · '));
 }
 
+// Tentativas como pílulas (padrão Figma): nota colorida pelo resultado; vagas restantes em cinza.
+function tentativasPills(item) {
+  const pills = item.tentativas.map((t) => {
+    const classe = t.aprovado === true ? 'ok' : t.aprovado === false ? 'rep' : 'neutral';
+    return `<span class="avl-pill avl-pill--${classe}" title="${resultadoTentativa(t)}">${escapeHtml(t.nota ?? '-')}</span>`;
+  });
+  const vagas = Math.max(0, item.maxTentativas - item.tentativas.length);
+  for (let i = 0; i < vagas; i += 1) pills.push('<span class="avl-pill avl-pill--vazia">—</span>');
+  return `<span class="avl-attempts__sum">${item.usadas} de ${item.maxTentativas} usadas</span><span class="avl-pills">${pills.join('')}</span>`;
+}
+
+function situacaoPill(item) {
+  if (item.situacao === 'bloqueado') return `<span class="avl-status avl-status--bad">Bloqueado</span><small class="avl-status__meta">desde ${escapeHtml(formatAvaliacaoData(item.bloqueadoEm))}</small>`;
+  if (item.situacao === 'esgotado') return '<span class="avl-status avl-status--bad">Tentativas esgotadas</span><small class="avl-status__meta">precisa de liberação</small>';
+  const liberado = item.liberadoEm ? `<small class="avl-status__meta">liberado em ${escapeHtml(formatAvaliacaoData(item.liberadoEm))}</small>` : '';
+  return `<span class="avl-status avl-status--ok">Ativo</span>${liberado}`;
+}
+
 function avaliacaoRowHtml(item) {
-  const tentativas = item.tentativas.map(resultadoTentativa).join('<br>') || 'nenhuma';
   // Esgotado e ativo: pode bloquear. Bloqueado: pode liberar. Só a educação vê esses botões.
   let acao = '';
   if (podeLiberar()) {
@@ -2284,13 +2296,15 @@ function avaliacaoRowHtml(item) {
       acao = `<button type="button" class="btn-coral" data-liberar-aluno="${item.alunoId}" data-liberar-curso="${item.courseId}">Liberar</button>`;
     }
   }
+  const aprovada = item.ultimaNota !== null && item.ultimaNota !== undefined && Number(item.ultimaNota) > 7;
+  const nota = item.ultimaNota === null || item.ultimaNota === undefined ? '-' : escapeHtml(item.ultimaNota);
   return `<tr>
     <td><strong>${escapeHtml(item.nome)}</strong>${item.cargo ? `<br><small>${escapeHtml(item.cargo)}</small>` : ''}<br><small>${escapeHtml(item.email)}</small></td>
     <td>${escapeHtml(item.courseId)}</td>
-    <td>${item.usadas} de ${item.maxTentativas} usadas<br><small>${tentativas}</small></td>
-    <td>${item.ultimaNota ?? '-'}</td>
-    <td>${situacaoAvaliacao(item)}${item.liberadoPor ? `<br><small>por ${escapeHtml(item.liberadoPor)}</small>` : ''}</td>
-    <td>${acao}</td>
+    <td class="avl-attempts">${tentativasPills(item)}</td>
+    <td class="col-center"><span class="avl-last-grade${aprovada ? ' is-ok' : ''}">${nota}</span></td>
+    <td class="col-center avl-situacao">${situacaoPill(item)}${item.liberadoPor ? `<small class="avl-status__meta">por ${escapeHtml(item.liberadoPor)}</small>` : ''}</td>
+    <td class="col-center">${acao}</td>
   </tr>`;
 }
 

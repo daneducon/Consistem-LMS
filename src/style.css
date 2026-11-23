@@ -2333,6 +2333,18 @@ body.report-open { overflow: hidden; }
 #licensesTab .kpi-value { font-size: var(--fs-24); font-weight: var(--fw-semibold); line-height: var(--lh-normal); white-space: nowrap; }
 #licensesTab .kpi-sub { font-size: var(--fs-12); color: var(--text-secondary); }
 
+/* Card de destaque (Figma): cards individuais, ícone em tile, rótulo em carvão, card escuro para o indicador de atenção */
+#licensesTab .lic-kpi-row { gap: var(--space-16); margin: 0 0 var(--space-32); padding: 0; background: transparent; border: 0; border-radius: 0; }
+#licensesTab .lic-kpi-row .kpi-card { flex-direction: column; align-items: flex-start; gap: var(--space-8); padding: var(--space-20); background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-left: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; }
+#licensesTab .lic-kpi-row .kpi-card:first-child { border-left: var(--border-width-hairline) solid var(--border); }
+#licensesTab .lic-kpi-row .kpi-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--surface-alt); color: var(--text-default); }
+#licensesTab .lic-kpi-row .kpi-label { color: var(--text-default); }
+#licensesTab .lic-kpi-row .kpi-card--dark { background: var(--surface-inverse); border-color: var(--surface-inverse); }
+#licensesTab .lic-kpi-row .kpi-card--dark .kpi-icon { background: var(--accent-warm); color: var(--text-default); }
+#licensesTab .lic-kpi-row .kpi-card--dark .kpi-label { color: var(--accent-warm); }
+#licensesTab .lic-kpi-row .kpi-card--dark .kpi-value { color: var(--text-inverse); }
+#licensesTab .lic-kpi-row .kpi-card--dark .kpi-sub { color: var(--text-inverse-secondary); }
+
 .lic-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-40); margin-bottom: var(--space-32); align-items: stretch; }
 .lic-split .flow-block { margin: 0; }
 #licSchoolsRow { display: flex; flex-direction: column; gap: var(--space-24); margin: 0; grid-template-columns: none; }
@@ -2472,3 +2484,65 @@ body.report-open { overflow: hidden; }
 .form-footer-actions--center { align-items: center; }
 .form-label.no-margin { margin: 0; }
 #licBatchFeedback { margin-top: var(--space-12); }
+/* ---------- STEPPERS · padrão Figma ----------
+   Cada fase é uma coluna centralizada: número dentro do círculo e rótulo centralizado abaixo.
+   Uma linha contínua liga os centros do primeiro ao último círculo. */
+.phase-track { position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: 0; margin: 0 0 var(--space-24); }
+.phase-track::before { content: ''; position: absolute; top: 15px; left: calc(100% / 6); right: calc(100% / 6); height: 2px; background: var(--surface-hover); z-index: 0; }
+.phase-track .phase { position: relative; z-index: 1; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: var(--space-8); background: none; border: 0; padding: 0; font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--text-secondary); text-align: center; cursor: default; }
+.phase-track .phase i { display: none; }
+.phase-track .phase::before { width: 32px; height: 32px; border-radius: var(--r-full); display: inline-flex; align-items: center; justify-content: center; background: var(--surface-default); border: 1px solid var(--border); color: var(--text-secondary); font-size: var(--fs-12); font-weight: var(--fw-semibold); line-height: 1; }
+.phase-track .phase[data-step]::before { content: attr(data-step); }
+.phase-track .phase[data-phase]::before { content: attr(data-phase); }
+.phase-track .phase.is-current { color: var(--text-default); font-weight: var(--fw-semibold); }
+.phase-track .phase.is-current::before { background: var(--coral); border-color: var(--coral); color: var(--text-inverse); }
+.phase-track .phase.is-done { color: var(--text-default); }
+.phase-track .phase.is-done::before { background: var(--success); border-color: var(--success); color: var(--text-inverse); }
+.phase-track .phase.is-done i, .phase-track .phase.is-current i { background: none; }
+@media (max-width: 768px) {
+  .phase-track { gap: 8px; }
+  .phase-track .phase { font-size: var(--fs-12); }
+}
+
+/* ---------- LICENÇAS · tabela no padrão Figma ---------- */
+/* Coluna de seleção centralizada na horizontal e na vertical, no cabeçalho e nas linhas. */
+#licensesTab .data-table th:first-child,
+#licensesTab .data-table td:first-child { width: 48px; text-align: center; vertical-align: middle; }
+#licensesTab .data-table td:first-child input[type="checkbox"] { display: block; margin: 0 auto; width: 18px; height: 18px; }
+#licensesTab .data-table th:first-child input[type="checkbox"] { display: block; margin: 0 auto; width: 18px; height: 18px; }
+/* Sem avatar: nome e e-mail, como no Figma */
+#licensesTab .student-avatar { display: none; }
+
+/* ---------- MATRÍCULA EM LOTE · cards de indicador (padrão Figma: Card de destaque) ---------- */
+/* Validação e execução usam o mesmo card: borda própria, rótulo em carvão, valor em destaque, sem sombra. */
+.preview-file-bar { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.preview-file-item { box-shadow: none; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px; background: var(--surface-default); }
+.preview-file-label { color: var(--text-default); font-size: 11px; letter-spacing: 0.02em; }
+.preview-file-item:not(:first-child) .preview-file-value { font-size: 26px; color: var(--text-default); }
+.preview-file-value.highlight { color: var(--text-default); }
+.preview-file-meta { color: var(--text-secondary); font-size: 13px; }
+.exec-stats-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.exec-stat { background: var(--surface-default); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px; align-items: flex-start; }
+.exec-stat.success, .exec-stat.danger, .exec-stat.neutral { background: var(--surface-default); border: 1px solid var(--border); }
+.exec-stat-label { color: var(--text-default); font-size: 11px; letter-spacing: 0.02em; }
+.exec-stat-value { font-size: 26px; color: var(--text-default); }
+.exec-stat.success .exec-stat-icon { color: var(--feedback-positive); }
+.exec-stat.danger .exec-stat-icon { color: var(--accent-highlight); }
+.exec-stat.danger .exec-stat-label { color: var(--accent-highlight); }
+.exec-stat-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--surface-alt); display: inline-flex; align-items: center; justify-content: center; }
+@media (max-width: 1024px) { .preview-file-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---------- CONSULTA DO ALUNO · padrão Figma (parcial) ---------- */
+/* Sem as sub-abas: a tela mostra a lista de cursos direto, como no Figma. */
+#searchTab .dash-subtabs { display: none; }
+/* Faixa de indicadores: cards individuais, como em Licenças. */
+#searchTab .kpi-row { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-16); margin: 0 0 var(--space-32); padding: 0; background: transparent; border: 0; border-radius: 0; }
+#searchTab .kpi-row .kpi-card { flex-direction: column; align-items: flex-start; gap: var(--space-8); padding: var(--space-20); background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-left: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); box-shadow: none; }
+#searchTab .kpi-row .kpi-card:first-child { border-left: var(--border-width-hairline) solid var(--border); }
+#searchTab .kpi-row .kpi-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--surface-alt); color: var(--text-default); }
+#searchTab .kpi-row .kpi-label { color: var(--text-default); font-size: var(--fs-11); font-weight: var(--fw-semibold); }
+#searchTab .kpi-row .kpi-value { font-size: var(--fs-24); font-weight: var(--fw-semibold); }
+/* Cursos: três colunas, como a grade do Figma. */
+#searchTab .courses-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-16); }
+@media (max-width: 1024px) { #searchTab .courses-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 768px) { #searchTab .courses-list { grid-template-columns: minmax(0, 1fr); } }

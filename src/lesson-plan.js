@@ -151,7 +151,7 @@ function renderStepper() {
     const step = index + 1;
     const enabled = step === 1 || (step <= 3 && state.plan.unidades.length) || (step === 4 && state.plan.wordpressData.linkPlanoEnsinoPdf);
     const stateClass = state.step > step ? 'is-done' : state.step === step ? 'is-current' : '';
-    return `<button type="button" class="phase lesson-phase ${stateClass}" data-action="step" data-step="${step}" ${enabled ? '' : 'disabled'} ${state.step === step ? 'aria-current="step"' : ''}><i></i>Fase ${step} · ${label}</button>`;
+    return `<button type="button" class="phase lesson-phase ${stateClass}" data-action="step" data-step="${step}" ${enabled ? '' : 'disabled'} ${state.step === step ? 'aria-current="step"' : ''}><i></i>${label}</button>`;
   }).join('')}</div>`;
 }
 
