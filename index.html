@@ -346,12 +346,15 @@
           </div>
           <div class="subtabs-right">
             <span class="subtabs-summary" id="subtabsSummary">2 em andamento + 2 concluidos</span>
-            <button type="button" class="btn-ghost-sm">
-              Mais recentes primeiro
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
+            <label class="course-sort">
+              <span class="sr-only">Ordenar cursos por</span>
+              <select id="coursesSortSelect" class="course-sort-select">
+                <option value="api">Ordem da Hotscool</option>
+                <option value="progress-desc">Maior progresso</option>
+                <option value="progress-asc">Menor progresso</option>
+                <option value="name">Nome (A–Z)</option>
+              </select>
+            </label>
           </div>
         </div>
 

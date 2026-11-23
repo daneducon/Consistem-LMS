@@ -464,6 +464,20 @@ if (searchClearBtn) {
   });
 }
 
+// Ordenação da aba Cursos & Progresso. "api" mantém a ordem recebida da Hotscool.
+let dashboardCourses = [];
+const coursesSortSelect = document.getElementById('coursesSortSelect');
+function sortDashboardCourses(list) {
+  const mode = coursesSortSelect?.value || 'api';
+  const pct = (c) => Math.min(100, Math.max(0, c.percentual || 0));
+  const copy = [...list];
+  if (mode === 'progress-desc') copy.sort((a, b) => pct(b) - pct(a));
+  if (mode === 'progress-asc') copy.sort((a, b) => pct(a) - pct(b));
+  if (mode === 'name') copy.sort((a, b) => String(a.titulo_curso || '').localeCompare(String(b.titulo_curso || ''), 'pt-BR'));
+  return copy;
+}
+coursesSortSelect?.addEventListener('change', () => renderStudentCourses(sortDashboardCourses(dashboardCourses)));
+
 function renderStudentCourses(courses) {
   if (!courses || courses.length === 0) {
     dashCoursesContainer.innerHTML = `
@@ -796,7 +810,8 @@ function showDashboard(data) {
   }
 
   // Render
-  renderStudentCourses(data.cursos || []);
+  dashboardCourses = data.cursos || [];
+  renderStudentCourses(sortDashboardCourses(dashboardCourses));
   renderStudentCertificates(data.certificados || []);
   renderStudentTrails(data.trilhas || []);
   renderLearningProgress(data.cursos || []);
