@@ -2681,3 +2681,6 @@ body.report-open { overflow: hidden; }
 /* Relatório por curso: mais espaço entre os indicadores e o título "Alunos do curso". */
 #relatorioCursoTab .avl-kpis { margin-bottom: var(--space-40); }
 #relatorioCursoTab .rel-section-head { margin-top: var(--space-16); }
+
+/* Relatório por curso: "Concluído" em verde (cor de sucesso da DS). */
+#relatorioCursoTab .avl-status--done { background: var(--feedback-positive); color: var(--text-inverse); border: 0; }

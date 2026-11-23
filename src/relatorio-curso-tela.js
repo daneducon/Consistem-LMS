@@ -31,7 +31,7 @@ function linhaDoAluno(a) {
   const situacao = a.bloqueado
     ? '<span class="avl-status avl-status--bad">Bloqueado</span>'
     : a.concluido
-      ? '<span class="avl-status avl-status--ok">Concluído</span>'
+      ? '<span class="avl-status avl-status--done">Concluído</span>'
       : '<span class="avl-status avl-status--ok">Em andamento</span>';
   const ultimoLogin = a.ultimoLogin ? new Date(a.ultimoLogin).toLocaleDateString('pt-BR') : 'Nunca';
   return `<tr>
