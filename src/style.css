@@ -2639,8 +2639,13 @@ body.report-open { overflow: hidden; }
 #searchTab .course-sort .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 #searchTab .course-sort { position: relative; display: inline-flex; }
 /* Títulos dos KPIs: coral nos cards de fundo branco; o card escuro mantém o título em âmbar (padrão do PPT). */
-#searchTab .kpi-card:not(.kpi-card--dark) .kpi-label,
 #licensesTab .kpi-card:not(.kpi-card--dark) .kpi-label { color: var(--accent-highlight); }
+/* Consulta do aluno: cards no padrão dos cards de Avaliações (título escuro, ícone em caixa). */
+#searchTab .kpi-row .kpi-card:not(.kpi-card--dark) .kpi-label { color: var(--text-default); letter-spacing: 0.02em; text-transform: uppercase; }
+#searchTab .kpi-row .kpi-card .kpi-sub, #searchTab .kpi-row .kpi-card small { color: var(--text-secondary); }
+/* Espaçamento entre as seções: 32px vindos do gap da coluna, sem margens extras. */
+#searchTab .dashboard-360 > .kpi-row { margin-bottom: 0; }
+#searchTab .dashboard-360 > .dashboard-bottom { margin-top: 0; }
 
 /* Matrícula individual · carga horária em pílula coral ao lado do nome (padrão Figma). */
 #registerCoursesCard .course-check-name-row { display: flex; align-items: center; gap: var(--space-8); min-width: 0; }
