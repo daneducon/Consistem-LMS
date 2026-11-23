@@ -2669,3 +2669,11 @@ body.report-open { overflow: hidden; }
 #relatorioCursoTab .rel-progress__bar span { display: block; height: 100%; background: var(--text-default); }
 #relatorioCursoTab .rel-progress__pct { min-width: 40px; font-size: var(--fs-14); color: var(--text-default); }
 #relatorioCursoTab select:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Relatório por curso: linhas da tabela centralizadas verticalmente, com respiro; data de atualização alinhada ao título. */
+#relatorioCursoTab .data-table th,
+#relatorioCursoTab .data-table td { padding: 14px 16px; vertical-align: middle; line-height: 1.4; }
+#relatorioCursoTab .data-table td small { display: block; margin-top: 2px; }
+#relatorioCursoTab .rel-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-16); margin-bottom: var(--space-16); }
+#relatorioCursoTab .rel-section-head .avl-section-title { margin: 0; }
+#relatorioCursoTab .rel-updated { font-size: var(--fs-12); color: var(--text-secondary); white-space: nowrap; }

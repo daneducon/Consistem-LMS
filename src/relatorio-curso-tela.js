@@ -8,6 +8,7 @@ const relCurso = el('relCurso');
 const relKpis = el('relKpis');
 const relTbody = el('relTbody');
 const relStatus = el('relStatus');
+const relAtualizado = el('relAtualizado');
 const relBusca = el('relBusca');
 const relPdfBtn = el('relPdfBtn');
 const relCsvBtn = el('relCsvBtn');
@@ -21,6 +22,7 @@ function limpar() {
   relKpis.innerHTML = '';
   relTbody.innerHTML = '';
   relStatus.textContent = '';
+  relAtualizado.textContent = '';
   ['relCountTodos', 'relCountConcluidos', 'relCountBloqueados'].forEach((id) => { el(id).textContent = '0'; });
 }
 
@@ -50,7 +52,8 @@ function renderTabela() {
   relTbody.innerHTML = lista.length
     ? lista.map(linhaDoAluno).join('')
     : '<tr><td colspan="5">Nenhum aluno encontrado.</td></tr>';
-  relStatus.textContent = `${lista.length} de ${dados.alunos.length} alunos · dados de ${new Date(dados.atualizadoEm).toLocaleString('pt-BR')}`;
+  relStatus.textContent = `${lista.length} de ${dados.alunos.length} alunos`;
+  relAtualizado.textContent = `Atualizado em ${new Date(dados.atualizadoEm).toLocaleString('pt-BR')}`;
 }
 
 function render() {
