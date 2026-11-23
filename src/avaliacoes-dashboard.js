@@ -133,9 +133,20 @@ export function computeStats({ items, respostas }) {
 
 // ---------- HTML dos componentes ----------
 
-export function kpiCard({ label, value, sub = '', tone = 'graphite' }) {
+// Ícones de linha (mesmo traço dos demais ícones do app), no padrão dos cards do Figma.
+const KPI_ICONS = {
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  award: '<circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>',
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  alert: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  check: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+};
+
+export function kpiCard({ label, value, sub = '', tone = 'graphite', icon = 'award' }) {
   return `
     <div class="avl-kpi avl-kpi--${tone}">
+      <span class="avl-kpi__icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${KPI_ICONS[icon] || KPI_ICONS.award}</svg></span>
       <span class="avl-kpi__label">${escapeHtml(label)}</span>
       <strong class="avl-kpi__value">${escapeHtml(value)}</strong>
       <span class="avl-kpi__sub">${escapeHtml(sub)}</span>
@@ -147,17 +158,17 @@ export function kpiCardsFor(kpis, umaPessoa = null) {
   const tempoMedio = kpis.duracaoMedia === null ? '-' : `${formatNumber(kpis.duracaoMedia)} min`;
   if (umaPessoa) {
     return [
-      kpiCard({ label: 'Tentativas usadas', value: `${kpis.usadas} de 3`, sub: 'desde a última liberação' }),
-      kpiCard({ label: 'Melhor nota', value: formatNumber(kpis.melhorNota), sub: 'de 10', tone: 'gold' }),
-      kpiCard({ label: 'Aprovação', value: formatPercent(kpis.taxaAprovacao), sub: 'tentativas concluídas', tone: 'success' }),
-      kpiCard({ label: 'Tempo médio', value: tempoMedio, sub: 'por tentativa' }),
+      kpiCard({ label: 'Tentativas usadas', value: `${kpis.usadas} de 3`, sub: 'desde a última liberação', icon: 'check' }),
+      kpiCard({ label: 'Melhor nota', value: formatNumber(kpis.melhorNota), sub: 'de 10', tone: 'gold', icon: 'star' }),
+      kpiCard({ label: 'Aprovação', value: formatPercent(kpis.taxaAprovacao), sub: 'tentativas concluídas', tone: 'success', icon: 'award' }),
+      kpiCard({ label: 'Tempo médio', value: tempoMedio, sub: 'por tentativa', icon: 'clock' }),
     ].join('');
   }
   return [
-    kpiCard({ label: 'Pessoas', value: kpis.alunos, sub: 'matrículas no filtro' }),
-    kpiCard({ label: 'Aprovação', value: formatPercent(kpis.taxaAprovacao), sub: 'tentativas concluídas', tone: 'dark' }),
-    kpiCard({ label: 'Nota média', value: formatNumber(kpis.notaMedia), sub: 'de 10', tone: 'gold' }),
-    kpiCard({ label: 'Bloqueados ou esgotados', value: kpis.bloqueados, sub: 'precisam de liberação', tone: 'coral' }),
+    kpiCard({ label: 'Pessoas', value: kpis.alunos, sub: 'matrículas no filtro', icon: 'users' }),
+    kpiCard({ label: 'Aprovação', value: formatPercent(kpis.taxaAprovacao), sub: 'tentativas concluídas', tone: 'dark', icon: 'award' }),
+    kpiCard({ label: 'Nota média', value: formatNumber(kpis.notaMedia), sub: 'de 10', tone: 'gold', icon: 'star' }),
+    kpiCard({ label: 'Bloqueados ou esgotados', value: kpis.bloqueados, sub: 'precisam de liberação', tone: 'coral', icon: 'alert' }),
   ].join('');
 }
 
