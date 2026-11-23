@@ -476,7 +476,7 @@ function renderStudentCourses(courses) {
   dashCoursesContainer.innerHTML = courses.map((c) => {
     const perc = Math.min(100, Math.max(0, c.percentual || 0));
     const isDone = c.concluido || perc >= 100;
-    const statusClass = isDone ? 'success' : 'warning';
+    const statusClass = isDone ? 'success' : 'neutral';
     const statusText = isDone ? 'Concluido' : 'Em Andamento';
     const turma = c.turma && c.turma !== 'null' ? escapeHtml(c.turma) : '';
     const title = escapeHtml(c.titulo_curso);
@@ -522,7 +522,7 @@ function renderStudentCourses(courses) {
     }
     if (reactivateBtn) actions += reactivateBtn;
 
-    const progressClass = isDone ? 'green' : (perc >= 50 ? 'gold' : '');
+    const progressClass = isDone ? 'green' : '';
 
     return `
       <div class="course-card ${isBlocked ? 'course-blocked' : ''}">
@@ -711,7 +711,7 @@ function showDashboard(data) {
       cls = 'status-pill error';
     } else if (blocked > 0) {
       label = `${blocked} curso(s) bloqueado(s)`;
-      cls = 'status-pill warning';
+      cls = 'status-pill error';
     } else if (label === 'Ativo') {
       label = 'Matrícula Ativa';
     }
@@ -841,6 +841,8 @@ function renderStatusRing(done, ongoing) {
   done = Math.max(0, Math.round(Number(done) || 0));
   ongoing = Math.max(0, Math.round(Number(ongoing) || 0));
   const total = done + ongoing;
+  const resumo = document.getElementById('learningProgressSub');
+  if (resumo) resumo.textContent = `${total} inscrições · ${done} concluída(s) · ${ongoing} em andamento`;
   if (total <= 0) {
     el.innerHTML = '<span class="chart-empty">Sem inscrições para exibir.</span>';
     legend.innerHTML = '';
@@ -873,19 +875,19 @@ function renderLearningProgress(courses) {
 
   chart.innerHTML = courses.slice(0, 6).map((course) => {
     const progress = Math.min(100, Math.max(0, course.percentual || 0));
-    const shortTitle = course.titulo_curso.length > 18
-      ? `${course.titulo_curso.slice(0, 16)}...`
-      : course.titulo_curso;
     return `
       <div class="chart-bar-item" title="${escapeHtml(course.titulo_curso)}: ${progress}%">
         <span class="bar-value">${progress}%</span>
-        <div class="bar" style="height:${Math.max(8, progress)}%">
-          <span class="bar-fill ${progress >= 100 ? 'green' : progress >= 50 ? 'gold' : 'coral'}"></span>
+        <div class="bar-track">
+          <div class="bar" style="height:${Math.max(8, progress) * 1.8}px">
+            <span class="bar-fill ${progress >= 100 ? 'green' : 'ink'}"></span>
+          </div>
         </div>
-        <span class="bar-label">${escapeHtml(shortTitle)}</span>
+        <span class="bar-label">${escapeHtml(course.titulo_curso)}</span>
       </div>`;
   }).join('');
-  total.textContent = `${courses.length} curso(s) sincronizado(s)`;
+  const agora = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  total.textContent = `Atualizado em ${agora}`;
 }
 
 searchForm.addEventListener('submit', async (e) => {

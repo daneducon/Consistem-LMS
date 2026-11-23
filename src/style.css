@@ -2290,7 +2290,7 @@ body.report-open { overflow: hidden; }
 #searchTab .registry-card { grid-column: 1 / -1; }
 #searchTab .chart-header h3, #searchTab .registry-header h3 { font-size: var(--fs-16); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-normal); }
 #searchTab .chart-sub { font-size: var(--fs-12); color: var(--text-secondary); }
-#searchTab .chart-bars .bar-fill.green { background: var(--text-default); }
+#searchTab .chart-bars .bar-fill.green { background: var(--feedback-positive); }
 #searchTab .chart-bars .bar-fill.gold { background: var(--accent-warm); }
 
 /* Anel de status das inscrições */
@@ -2546,3 +2546,51 @@ body.report-open { overflow: hidden; }
 #searchTab .courses-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-16); }
 @media (max-width: 1024px) { #searchTab .courses-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 768px) { #searchTab .courses-list { grid-template-columns: minmax(0, 1fr); } }
+
+/* Consulta do aluno · padrão Figma (cards de progresso, governança e cursos) */
+/* Card de status fundido ao de progresso: o resumo fica no subtítulo; o anel sai do layout. */
+#searchTab .status-ring-card.is-merged { display: none; }
+#searchTab .dashboard-bottom { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--space-24); align-items: stretch; }
+#searchTab .dashboard-bottom > .history-chart-card,
+#searchTab .dashboard-bottom > .registry-card { height: 100%; }
+#searchTab .chart-bar-item .bar-label { white-space: normal; line-height: 1.25; text-align: center; }
+#searchTab .bar-fill.ink { background: var(--text-default); }
+#searchTab .status-pill.neutral { background: var(--surface-alt); color: var(--text-default); border: 1px solid var(--border); }
+/* Registro & Governança: linhas com divisor, atenção em coral. */
+#searchTab .registry-list { display: grid; gap: 0; }
+#searchTab .registry-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-16); padding: 12px 0; border-bottom: var(--border-width-hairline) solid var(--border); }
+#searchTab .registry-row:last-child { border-bottom: 0; }
+#searchTab .registry-label { font-size: var(--fs-14); color: var(--text-secondary); }
+#searchTab .registry-value { font-size: var(--fs-14); font-weight: var(--fw-semibold); color: var(--text-default); }
+#searchTab .registry-card .btn-coral.full-width { margin-top: var(--space-16); height: 48px; }
+/* Cursos: banner com inicial, tags logo abaixo do banner, título maior. */
+#searchTab .course-card-cover { height: 170px; background: var(--surface-inverse); display: flex; align-items: center; justify-content: center; }
+#searchTab .course-card-cover span { color: var(--text-inverse); font-size: 48px; font-weight: var(--fw-semibold); }
+#searchTab .course-card-body { padding-top: var(--space-12); }
+#searchTab .course-card-status { margin-top: 0; }
+#searchTab .course-card-title { font-size: 25px; line-height: 1.2; }
+#searchTab .course-progress-row .course-progress-pct { color: var(--text-default) !important; }
+#searchTab .course-card .progress-bar-fill:not(.green) { background: var(--text-default); }
+#searchTab .course-card .progress-bar-fill.green { background: var(--feedback-positive); }
+
+/* Perfil do aluno · padrão Figma: card único, divisor entre identificação e dados, chip de bloqueio em coral. */
+#dashboard .profile-hero { background: var(--surface-default); border: var(--border-width-hairline) solid var(--border); border-radius: var(--r-lg); padding: var(--space-28, 28px); align-items: center; gap: var(--space-32); }
+#dashboard .profile-access-column { border-left: var(--border-width-hairline) solid var(--border); padding-left: var(--space-24); }
+#dashboard .profile-access-item { display: flex; flex-direction: column; gap: 2px; }
+#dashboard .profile-access-item > span { font-size: var(--fs-11); font-weight: var(--fw-semibold); letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-secondary); }
+#dashboard .profile-access-item > strong { font-size: var(--fs-14); font-weight: var(--fw-regular, 400); color: var(--text-default); }
+#dashboard .profile-status-row .status-pill.info { background: var(--surface-alt); color: var(--text-default); border: 1px solid var(--border); }
+#dashboard .profile-status-row .status-pill.error { background: var(--accent-soft); color: var(--text-accent); border: 0; }
+
+/* Cursos e progresso · card único (Figma): resumo à direita, barras ocupando o card, rodapé com selo e data. */
+#searchTab .progress-card { display: flex; flex-direction: column; }
+#searchTab .progress-card .chart-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-16); }
+#searchTab .progress-card .chart-summary { font-size: var(--fs-14); color: var(--text-secondary); text-align: right; }
+#searchTab .progress-card .chart-bars { flex: 1; height: auto; align-items: flex-end; margin-top: var(--space-24); }
+#searchTab .progress-card .chart-bar-item { height: auto; justify-content: flex-end; }
+#searchTab .progress-card .bar-track { width: 100%; height: 180px; display: flex; align-items: flex-end; }
+#searchTab .progress-card .bar { height: auto; }
+#searchTab .progress-card .chart-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); margin-top: auto; padding-top: var(--space-16); border-top: var(--border-width-hairline) solid var(--border); }
+#searchTab .progress-card .chart-footer .chart-badge { margin: 0; }
+#searchTab .progress-card .chart-total { font-size: var(--fs-12, 12px); color: var(--text-secondary); }
+#searchTab .dashboard-bottom > .progress-card { height: 100%; }

@@ -427,26 +427,24 @@
 
         <!-- Bottom Section -->
         <div class="dashboard-bottom">
-          <div class="history-chart-card">
+          <div class="history-chart-card progress-card">
             <div class="chart-header">
-              <h3>Progresso por Curso</h3>
+              <h3>Cursos e progresso</h3>
+              <span class="chart-summary" id="learningProgressSub">Percentual concluído informado pelo relatório de cada curso.</span>
+            </div>
+            <div class="chart-bars" id="learningProgressChart"></div>
+            <div class="chart-footer">
               <span class="chart-badge success">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
                 Dados da Hotscool
               </span>
-            </div>
-            <p class="chart-sub">Percentual concluido informado pelo relatório de cada curso.</p>
-            <div class="chart-bars" id="learningProgressChart"></div>
-            <div class="chart-footer">
-              <span class="chart-legend"><span class="legend-dot coral"></span> Atualizado junto com a consulta do
-                aluno</span>
               <span class="chart-total" id="learningProgressTotal">Dados sincronizados agora</span>
             </div>
           </div>
 
-          <div class="history-chart-card status-ring-card">
+          <div class="history-chart-card status-ring-card is-merged" aria-hidden="true">
             <div class="chart-header">
               <h3>Status das inscrições</h3>
             </div>
