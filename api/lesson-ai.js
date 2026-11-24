@@ -1,5 +1,5 @@
-import { requirePermission } from './auth-utils.js';
-import { applyRateLimit, requireTrustedJsonRequest } from './security.js';
+import { requirePermission } from '../lib/auth-utils.js';
+import { applyRateLimit, requireTrustedJsonRequest } from '../lib/security.js';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const MODEL = 'google/gemma-4-26b-a4b-it';

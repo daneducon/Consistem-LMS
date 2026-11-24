@@ -5,8 +5,8 @@ import {
   isAuthConfigured,
   isEmailAllowed,
   setSessionCookie,
-} from '../auth-utils.js';
-import { applyRateLimit, requireTrustedJsonRequest } from '../security.js';
+} from '../../lib/auth-utils.js';
+import { applyRateLimit, requireTrustedJsonRequest } from '../../lib/security.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

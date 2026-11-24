@@ -8,8 +8,8 @@ import {
   getAuthorization,
   isAuthConfigured,
   requirePermission,
-} from '../api/auth-utils.js';
-import { applyRateLimit, clientAddress, requireTrustedGetRequest, requireTrustedJsonRequest } from '../api/security.js';
+} from '../lib/auth-utils.js';
+import { applyRateLimit, clientAddress, requireTrustedGetRequest, requireTrustedJsonRequest } from '../lib/security.js';
 
 const createValidSecret = () => randomBytes(32).toString('hex');
 

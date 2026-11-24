@@ -1,5 +1,5 @@
-import { getAuthorization, getSession, isAuthConfigured, isEmailAllowed } from '../auth-utils.js';
-import { requireTrustedGetRequest } from '../security.js';
+import { getAuthorization, getSession, isAuthConfigured, isEmailAllowed } from '../../lib/auth-utils.js';
+import { requireTrustedGetRequest } from '../../lib/security.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

@@ -6,9 +6,9 @@
 // Auth: mesma sessão JWT do painel (students:read), mesmo padrão de
 // /api/student GET, incluindo rate limit por usuário.
 
-import { getWordPressProfileByEmail, isWordPressConfigured } from './wordpress.js';
-import { requirePermission } from './auth-utils.js';
-import { applyRateLimit, requireTrustedGetRequest } from './security.js';
+import { getWordPressProfileByEmail, isWordPressConfigured } from '../lib/wordpress.js';
+import { requirePermission } from '../lib/auth-utils.js';
+import { applyRateLimit, requireTrustedGetRequest } from '../lib/security.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {

@@ -5,8 +5,8 @@
 // deveria ter sido desfeita/bloqueada. Ação é sempre manual (1 clique).
 import avaliacoesHandler from '../lib/avaliacoes.js';
 import relatorioCursoHandler from '../lib/relatorio-curso.js';
-import { filterAuthorizedSchools, requirePermission } from './auth-utils.js';
-import { applyRateLimit, requireTrustedGetRequest } from './security.js';
+import { filterAuthorizedSchools, requirePermission } from '../lib/auth-utils.js';
+import { applyRateLimit, requireTrustedGetRequest } from '../lib/security.js';
 import {
   HOTSCOOL_API_URL,
   fetchLeadsFromSchool,
@@ -15,8 +15,8 @@ import {
   getSchools,
   hotscoolConcurrency,
   mapWithConcurrency,
-} from './hotscool.js';
-import { findEnrollmentDate } from './enrollment-log.js';
+} from '../lib/hotscool.js';
+import { findEnrollmentDate } from '../lib/enrollment-log.js';
 import { fetchCourseAccessStatus } from './student.js';
 
 export const LICENSE_WINDOW_DAYS = 30;

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { calcLicenseRisk, getMaxActiveLicenses, LICENSE_WINDOW_DAYS } from '../api/licenses.js';
-import { findEnrollmentDate, logKey } from '../api/enrollment-log.js';
+import { findEnrollmentDate, logKey } from '../lib/enrollment-log.js';
 
 const DAY = 86_400_000;
 

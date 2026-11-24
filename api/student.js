@@ -10,11 +10,11 @@ import {
   invalidateSchoolCache,
   mapWithConcurrency,
   matchStudentEmail,
-} from './hotscool.js';
+} from '../lib/hotscool.js';
 import { randomBytes } from 'node:crypto';
-import { filterAuthorizedSchools, requirePermission } from './auth-utils.js';
-import { recordEnrollment } from './enrollment-log.js';
-import { applyRateLimit, requireTrustedGetRequest, requireTrustedJsonRequest } from './security.js';
+import { filterAuthorizedSchools, requirePermission } from '../lib/auth-utils.js';
+import { recordEnrollment } from '../lib/enrollment-log.js';
+import { applyRateLimit, requireTrustedGetRequest, requireTrustedJsonRequest } from '../lib/security.js';
 
 const HOTSCOOL_STUDENT_PORTAL_URL = process.env.HOTSCOOL_STUDENT_PORTAL_URL || 'https://app.hotscool.com';
 const DEFAULT_ACCESS_DAYS = Number(process.env.HOTSCOOL_DEFAULT_ACCESS_DAYS || 30);

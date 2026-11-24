@@ -1,5 +1,5 @@
-import { clearSessionCookie } from '../auth-utils.js';
-import { requireTrustedJsonRequest } from '../security.js';
+import { clearSessionCookie } from '../../lib/auth-utils.js';
+import { requireTrustedJsonRequest } from '../../lib/security.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

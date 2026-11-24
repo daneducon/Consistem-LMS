@@ -1,4 +1,4 @@
-import { isAuthConfigured } from '../auth-utils.js';
+import { isAuthConfigured } from '../../lib/auth-utils.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

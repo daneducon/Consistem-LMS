@@ -1,12 +1,12 @@
-import { filterAuthorizedSchools, requirePermission } from './auth-utils.js';
-import { applyRateLimit, requireTrustedGetRequest } from './security.js';
+import { filterAuthorizedSchools, requirePermission } from '../lib/auth-utils.js';
+import { applyRateLimit, requireTrustedGetRequest } from '../lib/security.js';
 import {
   fetchCoursesFromSchool,
   fetchPackagesFromSchool,
   fetchSchoolName,
   getSchools,
   mapWithConcurrency,
-} from './hotscool.js';
+} from '../lib/hotscool.js';
 
 // Re-exportados para compatibilidade com importadores existentes.
 export {
@@ -15,7 +15,7 @@ export {
   fetchSchoolName,
   getSchools,
 };
-export { fetchPackagesFromAllSchools } from './hotscool.js';
+export { fetchPackagesFromAllSchools } from '../lib/hotscool.js';
 
 export default async function handler(req, res) {
   const authenticatedUser = await requirePermission(req, res, 'courses:read');

@@ -8,7 +8,7 @@ import {
   invalidateSchoolCache,
   mapWithConcurrency,
   matchStudentEmail,
-} from '../api/hotscool.js';
+} from '../lib/hotscool.js';
 
 test('mapWithConcurrency preserves order under a limit', async () => {
   let running = 0;
