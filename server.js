@@ -9,6 +9,7 @@ import authSessionHandler from './api/auth/session.js';
 import authLogoutHandler from './api/auth/logout.js';
 import lessonAiHandler from './api/lesson-ai.js';
 import licensesHandler from './api/licenses.js';
+import wpProfileHandler from './api/wp-profile.js';
 
 const app = express();
 const PORT = 3001;
@@ -63,6 +64,16 @@ app.all('/api/auth/google', authGoogleHandler);
 app.all('/api/auth/session', authSessionHandler);
 app.all('/api/auth/logout', authLogoutHandler);
 app.all('/api/lesson-ai', lessonAiHandler);
+app.all('/api/wp-profile', async (req, res) => {
+  try {
+    await wpProfileHandler(req, res);
+  } catch (error) {
+    console.error('Erro no endpoint /api/wp-profile:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Erro no servidor ao buscar perfil no WordPress' });
+    }
+  }
+});
 app.all('/api/licenses', async (req, res) => {
   try {
     await licensesHandler(req, res);

@@ -5,11 +5,13 @@ const LINHAS_POR_PAGINA = 20;
 
 const situacaoDo = (a) => (a.bloqueado ? 'Bloqueado' : a.concluido ? 'Concluído' : 'Em andamento');
 const dataDo = (iso) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : 'Nunca');
+const timesDo = (a) => (Array.isArray(a.equipes) && a.equipes.length ? a.equipes.join(', ') : '');
 
 export function buildCsvCurso({ curso, alunos }) {
-  const cabecalho = ['Curso', 'Aluno', 'E-mail', 'Progresso (%)', 'Aulas vistas', 'Total de aulas', 'Último login', 'Situação'];
+  const cabecalho = ['Curso', 'Aluno', 'E-mail', 'Cargo', 'Área de Negócio', 'Times', 'Progresso (%)', 'Aulas vistas', 'Total de aulas', 'Último login', 'Situação'];
   const linhas = alunos.map((a) => [
-    curso?.nome || '', a.nome, a.email, a.progresso, a.aulasVistas, a.totalAulas, dataDo(a.ultimoLogin), situacaoDo(a),
+    curso?.nome || '', a.nome, a.email, a.cargo || '', a.areaNegocio || '', timesDo(a),
+    a.progresso, a.aulasVistas, a.totalAulas, dataDo(a.ultimoLogin), situacaoDo(a),
   ]);
   return [cabecalho, ...linhas]
     .map((linha) => linha.map((campo) => `"${String(campo ?? '').replace(/"/g, '""')}"`).join(';'))
@@ -26,6 +28,8 @@ export function relatorioCursoPages({ curso, resumo, alunos, geradoEm }) {
       <tr>
         <td><strong>${escapeHtml(a.nome)}</strong><br><small>${escapeHtml(a.email)}</small></td>
         <td>${escapeHtml(a.progresso)}%</td>
+        <td>${escapeHtml(a.areaNegocio || '—')}</td>
+        <td>${escapeHtml(timesDo(a) || '—')}</td>
         <td>${escapeHtml(a.aulasVistas)} de ${escapeHtml(a.totalAulas)}</td>
         <td>${escapeHtml(dataDo(a.ultimoLogin))}</td>
         <td>${escapeHtml(situacaoDo(a))}</td>
@@ -40,14 +44,16 @@ export function relatorioCursoPages({ curso, resumo, alunos, geradoEm }) {
           <strong>${resumo.emAndamento}</strong> em andamento · <strong>${resumo.bloqueados}</strong> bloqueados ·
           progresso médio <strong>${resumo.progressoMedio}%</strong>
         </p>` : ''}
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
           <thead>
             <tr style="text-align:left;color:#6b6b70;">
-              <th style="padding:8px 6px;border-bottom:1px solid #e4e4e7;">Aluno</th>
-              <th style="padding:8px 6px;border-bottom:1px solid #e4e4e7;">Progresso</th>
-              <th style="padding:8px 6px;border-bottom:1px solid #e4e4e7;">Aulas vistas</th>
-              <th style="padding:8px 6px;border-bottom:1px solid #e4e4e7;">Último login</th>
-              <th style="padding:8px 6px;border-bottom:1px solid #e4e4e7;">Situação</th>
+              <th style="padding:8px 5px;border-bottom:1px solid #e4e4e7;">Aluno</th>
+              <th style="padding:8px 5px;border-bottom:1px solid #e4e4e7;">Progresso</th>
+              <th style="padding:8px 5px;border-bottom:1px solid #e4e4e7;">Área de Negócio</th>
+              <th style="padding:8px 5px;border-bottom:1px solid #e4e4e7;">Time</th>
+              <th style="padding:8px 5px;border-bottom:1px solid #e4e4e7;">Aulas vistas</th>
+              <th style="padding:8px 5px;border-bottom:1px solid #e4e4e7;">Último login</th>
+              <th style="padding:8px 5px;border-bottom:1px solid #e4e4e7;">Situação</th>
             </tr>
           </thead>
           <tbody>${linhas}</tbody>

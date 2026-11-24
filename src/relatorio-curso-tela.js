@@ -1,4 +1,5 @@
 // Tela "Relatório por curso": escolhe escola e curso, mostra indicadores e a lista de alunos, exporta PDF e CSV.
+// Colunas Área de Negócio e Time vêm do WordPress (perfil do colaborador, anexado em lib/relatorio-curso.js).
 import { escapeHtml, kpiCard } from './avaliacoes-dashboard.js';
 import { buildCsvCurso, relatorioCursoPages } from './relatorio-curso.js';
 
@@ -12,18 +13,38 @@ const relAtualizado = el('relAtualizado');
 const relBusca = el('relBusca');
 const relPdfBtn = el('relPdfBtn');
 const relCsvBtn = el('relCsvBtn');
+const relFiltroTime = el('relFiltroTime');
+const relFiltroArea = el('relFiltroArea');
 
 let escolasCarregadas = false;
 let dados = null;
 let filtro = 'todos';
+let filtroTime = '';
+let filtroArea = '';
 
 function limpar() {
   dados = null;
+  filtro = 'todos';
+  filtroTime = '';
+  filtroArea = '';
   relKpis.innerHTML = '';
   relTbody.innerHTML = '';
   relStatus.textContent = '';
   relAtualizado.textContent = '';
+  if (relFiltroTime) relFiltroTime.innerHTML = '<option value="">Todos os times</option>';
+  if (relFiltroArea) relFiltroArea.innerHTML = '<option value="">Todas as áreas</option>';
   ['relCountTodos', 'relCountConcluidos', 'relCountBloqueados'].forEach((id) => { el(id).textContent = '0'; });
+}
+
+// Preenche os selects de Time e Área com os valores presentes na lista atual.
+function popularFiltros() {
+  if (!relFiltroTime || !relFiltroArea || !dados) return;
+  const times = [...new Set((dados.alunos || []).flatMap((a) => a.equipes || []))].sort((x, y) => x.localeCompare(y, 'pt-BR'));
+  const areas = [...new Set((dados.alunos || []).map((a) => a.areaNegocio).filter(Boolean))].sort((x, y) => x.localeCompare(y, 'pt-BR'));
+  relFiltroTime.innerHTML = '<option value="">Todos os times</option>'
+    + times.map((t) => `<option value="${escapeHtml(t)}"${t === filtroTime ? ' selected' : ''}>${escapeHtml(t)}</option>`).join('');
+  relFiltroArea.innerHTML = '<option value="">Todas as áreas</option>'
+    + areas.map((a) => `<option value="${escapeHtml(a)}"${a === filtroArea ? ' selected' : ''}>${escapeHtml(a)}</option>`).join('');
 }
 
 function linhaDoAluno(a) {
@@ -34,9 +55,12 @@ function linhaDoAluno(a) {
       ? '<span class="avl-status avl-status--done">Concluído</span>'
       : '<span class="avl-status avl-status--ok">Em andamento</span>';
   const ultimoLogin = a.ultimoLogin ? new Date(a.ultimoLogin).toLocaleDateString('pt-BR') : 'Nunca';
+  const times = Array.isArray(a.equipes) && a.equipes.length ? a.equipes.join(', ') : '—';
   return `<tr>
     <td><strong>${escapeHtml(a.nome)}</strong><br><small>${escapeHtml(a.email)}</small></td>
     <td><div class="rel-progress"><div class="rel-progress__bar"><span style="width:${pct}%"></span></div><span class="rel-progress__pct">${pct}%</span></div></td>
+    <td>${escapeHtml(a.areaNegocio || '—')}</td>
+    <td>${escapeHtml(times)}</td>
     <td class="col-center">${Number(a.aulasVistas)} de ${Number(a.totalAulas)}</td>
     <td class="col-center">${escapeHtml(ultimoLogin)}</td>
     <td class="col-center">${situacao}</td>
@@ -47,11 +71,13 @@ function renderTabela() {
   const termo = relBusca.value.trim().toLowerCase();
   const lista = dados.alunos
     .filter((a) => filtro === 'todos' || (filtro === 'concluidos' ? a.concluido : a.bloqueado))
+    .filter((a) => !filtroArea || a.areaNegocio === filtroArea)
+    .filter((a) => !filtroTime || (Array.isArray(a.equipes) && a.equipes.includes(filtroTime)))
     .filter((a) => !termo || `${a.nome} ${a.email}`.toLowerCase().includes(termo))
     .sort((x, y) => x.nome.localeCompare(y.nome, 'pt-BR'));
   relTbody.innerHTML = lista.length
     ? lista.map(linhaDoAluno).join('')
-    : '<tr><td colspan="5">Nenhum aluno encontrado.</td></tr>';
+    : '<tr><td colspan="7">Nenhum aluno encontrado.</td></tr>';
   relStatus.textContent = `${lista.length} de ${dados.alunos.length} alunos`;
   relAtualizado.textContent = `Atualizado em ${new Date(dados.atualizadoEm).toLocaleString('pt-BR')}`;
 }
@@ -67,6 +93,7 @@ function render() {
   el('relCountTodos').textContent = String(resumo.alunos);
   el('relCountConcluidos').textContent = String(resumo.concluidos);
   el('relCountBloqueados').textContent = String(resumo.bloqueados);
+  popularFiltros();
   renderTabela();
 }
 
@@ -129,6 +156,20 @@ document.querySelectorAll('[data-rel-filter]').forEach((btn) => {
     if (dados) renderTabela();
   });
 });
+
+if (relFiltroTime) {
+  relFiltroTime.addEventListener('change', () => {
+    filtroTime = relFiltroTime.value;
+    if (dados) renderTabela();
+  });
+}
+
+if (relFiltroArea) {
+  relFiltroArea.addEventListener('change', () => {
+    filtroArea = relFiltroArea.value;
+    if (dados) renderTabela();
+  });
+}
 
 relBusca.addEventListener('input', () => { if (dados) renderTabela(); });
 

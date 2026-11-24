@@ -418,8 +418,16 @@
               <span class="academic-value" id="dashDetailUnit">-</span>
             </div>
             <div class="academic-card">
-              <span class="academic-label">Cargo</span>
+              <span class="academic-label">Cargo/Função</span>
               <span class="academic-value" id="dashDetailRole">-</span>
+            </div>
+            <div class="academic-card">
+              <span class="academic-label">Área de Negócio</span>
+              <span class="academic-value" id="dashDetailArea">-</span>
+            </div>
+            <div class="academic-card">
+              <span class="academic-label">Times</span>
+              <span class="academic-value" id="dashDetailTeams">-</span>
             </div>
             <div class="academic-card">
               <span class="academic-label">Codigo ERP / Matricula</span>
@@ -1191,6 +1199,20 @@
         <button type="button" class="avl-tab" data-rel-filter="concluidos" aria-pressed="false">Concluídos (<span id="relCountConcluidos">0</span>)</button>
         <button type="button" class="avl-tab" data-rel-filter="bloqueados" aria-pressed="false">Bloqueados (<span id="relCountBloqueados">0</span>)</button>
       </div>
+      <div class="avl-filter">
+        <label class="avl-filter__field">
+          <span>Time</span>
+          <select id="relFiltroTime">
+            <option value="">Todos os times</option>
+          </select>
+        </label>
+        <label class="avl-filter__field">
+          <span>Área de Negócio</span>
+          <select id="relFiltroArea">
+            <option value="">Todas as áreas</option>
+          </select>
+        </label>
+      </div>
       <p id="relStatus" class="page-subtitle" role="status"></p>
       <div class="table-container">
         <table class="data-table">
@@ -1198,6 +1220,8 @@
             <tr>
               <th>Aluno</th>
               <th>Progresso</th>
+              <th>Área de Negócio</th>
+              <th>Time</th>
               <th class="col-center">Aulas vistas</th>
               <th class="col-center">Último login</th>
               <th class="col-center">Situação</th>

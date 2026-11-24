@@ -840,6 +840,10 @@ function showDashboard(data) {
   dashDetailRole.textContent = data.cargo || 'Nao informado';
   dashDetailCode.textContent = data.codigoExterno || 'Não informado';
 
+  // Perfil WordPress (Cargo/Função, Área de Negócio e Times) — sobrepõe o
+  // cargo da Hotscool quando o colaborador existe no WordPress.
+  loadWordPressProfile(data.email);
+
   if (Array.isArray(data.trilhas) && data.trilhas.length > 0) {
     dashDetailTrails.innerHTML = data.trilhas
       .map((t) => {
@@ -856,6 +860,42 @@ function showDashboard(data) {
   dashboard.style.display = 'flex';
   dashboard.style.flexDirection = 'column';
   dashboard.style.gap = '24px';
+}
+
+// Perfil do colaborador no WordPress (colab.consistem.com.br): Cargo/Função,
+// Área de Negócio e Times. Busca por e-mail em /api/wp-profile; falha
+// silenciosa mantém os valores já exibidos (Hotscool).
+async function loadWordPressProfile(email) {
+  const roleEl = document.getElementById('dashDetailRole');
+  const areaEl = document.getElementById('dashDetailArea');
+  const teamsEl = document.getElementById('dashDetailTeams');
+  if (!roleEl || !areaEl || !teamsEl) return;
+  if (!email) {
+    areaEl.textContent = 'Não informada';
+    teamsEl.textContent = 'Não informado';
+    return;
+  }
+  areaEl.textContent = '...';
+  teamsEl.textContent = '...';
+  try {
+    const response = await fetch(`/api/wp-profile?email=${encodeURIComponent(email)}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const profile = await response.json();
+    if (!profile?.found) {
+      roleEl.textContent = roleEl.textContent || 'Não informado';
+      areaEl.textContent = 'Não informada';
+      teamsEl.textContent = 'Não informado';
+      return;
+    }
+    if (profile.cargo) roleEl.textContent = profile.cargo;
+    areaEl.textContent = profile.areaNegocio || 'Não informada';
+    const equipes = Array.isArray(profile.equipes) ? profile.equipes : [];
+    teamsEl.textContent = equipes.join(', ') || 'Não informado';
+  } catch {
+    // Sem WordPress configurado / offline: mantém o que já está na tela.
+    if (areaEl.textContent === '...') areaEl.textContent = 'Não informada';
+    if (teamsEl.textContent === '...') teamsEl.textContent = 'Não informado';
+  }
 }
 
 // Anel de status das inscrições: concluídas (grafite) e em andamento (coral), cores por token da DS.
