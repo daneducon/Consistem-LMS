@@ -15,12 +15,51 @@ const relPdfBtn = el('relPdfBtn');
 const relCsvBtn = el('relCsvBtn');
 const relFiltroTime = el('relFiltroTime');
 const relFiltroArea = el('relFiltroArea');
+const relLoading = el('relLoading');
+const relLoadingTempo = el('relLoadingTempo');
+const relLoadingEtapa = el('relLoadingEtapa');
+const relTableWrap = el('relTableWrap');
 
 let escolasCarregadas = false;
 let dados = null;
 let filtro = 'todos';
 let filtroTime = '';
 let filtroArea = '';
+let carregamentoTimer = null;
+
+// Etapas do carregamento por tempo decorrido — o servidor não envia progresso,
+// então o texto muda conforme a espera (a primeira carga monta o diretório do
+// WordPress e é a mais demorada).
+const ETAPAS_CARREGAMENTO = [
+  [0, 'Buscando a lista de alunos na Hotscool...'],
+  [8000, 'Calculando progresso e aulas de cada aluno...'],
+  [15000, 'Cruzando Cargo, Área de Negócio e Times no WordPress...'],
+  [25000, 'Primeira consulta ao WordPress — montando o índice de colaboradores...'],
+];
+
+function iniciarCarregamento() {
+  if (!relLoading) return;
+  const inicio = Date.now();
+  relLoading.hidden = false;
+  if (relTableWrap) relTableWrap.hidden = true;
+  relStatus.textContent = '';
+  if (relLoadingTempo) relLoadingTempo.textContent = '0s';
+  if (relLoadingEtapa) relLoadingEtapa.textContent = ETAPAS_CARREGAMENTO[0][1];
+  clearInterval(carregamentoTimer);
+  carregamentoTimer = setInterval(() => {
+    const segundos = Math.round((Date.now() - inicio) / 1000);
+    if (relLoadingTempo) relLoadingTempo.textContent = `${segundos}s`;
+    const etapa = [...ETAPAS_CARREGAMENTO].reverse().find(([t]) => segundos >= t);
+    if (etapa && relLoadingEtapa) relLoadingEtapa.textContent = etapa[1];
+  }, 1000);
+}
+
+function encerrarCarregamento() {
+  clearInterval(carregamentoTimer);
+  carregamentoTimer = null;
+  if (relLoading) relLoading.hidden = true;
+  if (relTableWrap) relTableWrap.hidden = false;
+}
 
 function limpar() {
   dados = null;
@@ -133,7 +172,7 @@ relEscola.addEventListener('change', async () => {
 relCurso.addEventListener('change', async () => {
   limpar();
   if (!relCurso.value) return;
-  relStatus.textContent = 'Carregando alunos do curso... pode levar alguns segundos.';
+  iniciarCarregamento();
   try {
     const res = await fetch(`/api/licenses?view=relatorio-curso&schoolIndex=${Number(relEscola.value)}&courseId=${Number(relCurso.value)}`);
     const json = await res.json();
@@ -142,6 +181,8 @@ relCurso.addEventListener('change', async () => {
     render();
   } catch (error) {
     relStatus.textContent = error.message;
+  } finally {
+    encerrarCarregamento();
   }
 });
 

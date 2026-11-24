@@ -1213,8 +1213,16 @@
           </select>
         </label>
       </div>
+      <div id="relLoading" class="rel-loading" hidden aria-live="polite">
+        <div class="rel-loading__head">
+          <strong id="relLoadingTexto">Carregando alunos do curso...</strong>
+          <span id="relLoadingTempo">0s</span>
+        </div>
+        <div class="rel-loading__bar"><span></span></div>
+        <p id="relLoadingEtapa" class="rel-loading__etapa">Buscando a lista de alunos na Hotscool...</p>
+      </div>
       <p id="relStatus" class="page-subtitle" role="status"></p>
-      <div class="table-container">
+      <div class="table-container" id="relTableWrap">
         <table class="data-table">
           <thead>
             <tr>

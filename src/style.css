@@ -2670,6 +2670,16 @@ body.report-open { overflow: hidden; }
 #relatorioCursoTab .rel-progress__pct { min-width: 40px; font-size: var(--fs-14); color: var(--text-default); }
 #relatorioCursoTab select:disabled { opacity: 0.6; cursor: not-allowed; }
 
+/* Relatório por curso: barra de carregamento com tempo decorrido e etapa. */
+#relatorioCursoTab .rel-loading { padding: var(--space-16); margin-bottom: var(--space-16); border: 1px solid var(--graphite-border); border-radius: var(--r-md); background: var(--surface-card); box-shadow: var(--shadow-card); }
+#relatorioCursoTab .rel-loading__head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-8); margin-bottom: var(--space-8); font-size: var(--fs-14); }
+#relatorioCursoTab .rel-loading__head span { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--coral); }
+#relatorioCursoTab .rel-loading__bar { height: 6px; border-radius: 3px; background: var(--surface-container); overflow: hidden; }
+#relatorioCursoTab .rel-loading__bar span { display: block; height: 100%; width: 40%; border-radius: 3px; background: var(--coral); animation: rel-loading-slide 1.2s ease-in-out infinite; }
+#relatorioCursoTab .rel-loading__etapa { margin: var(--space-8) 0 0; font-size: var(--fs-12); color: var(--text-secondary); }
+@keyframes rel-loading-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
+@media (prefers-reduced-motion: reduce) { #relatorioCursoTab .rel-loading__bar span { animation: none; width: 100%; opacity: 0.55; } }
+
 /* Relatório por curso: linhas da tabela centralizadas verticalmente, com respiro; data de atualização alinhada ao título. */
 #relatorioCursoTab .data-table th,
 #relatorioCursoTab .data-table td { padding: 14px 16px; vertical-align: middle; line-height: 1.4; }
