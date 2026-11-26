@@ -69,11 +69,11 @@ async function computeSchoolLicenses(school, forceRefresh) {
   if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     return cached.data;
   }
-  const [students, leads] = await Promise.all([
+  const [students, leads, realName] = await Promise.all([
     fetchStudentsFromSchool(school.apiKey, forceRefresh),
     fetchLeadsFromSchool(school.apiKey, forceRefresh).catch(() => []),
+    fetchSchoolName(school.apiKey).catch(() => null),
   ]);
-  const realName = await fetchSchoolName(school.apiKey).catch(() => null);
   const schoolName = realName || school.name;
 
   const enrollments = [];

@@ -76,12 +76,15 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Escola não encontrada.' });
     }
 
-    const courses = await fetchCoursesFromSchool(targetSchool.apiKey);
-    const realSchoolName = await fetchSchoolName(targetSchool.apiKey);
+    const includePackages = packagesQuery === '1' || packagesQuery === 'true';
+    const [courses, realSchoolName, packages] = await Promise.all([
+      fetchCoursesFromSchool(targetSchool.apiKey),
+      fetchSchoolName(targetSchool.apiKey),
+      includePackages ? fetchPackagesFromSchool(targetSchool.apiKey) : Promise.resolve([]),
+    ]);
 
     // Suporte a trilhas/packages: ?packages=1
-    if (packagesQuery === '1' || packagesQuery === 'true') {
-      const packages = await fetchPackagesFromSchool(targetSchool.apiKey);
+    if (includePackages) {
       return res.status(200).json({
         school: { id: targetSchool.id, name: realSchoolName || targetSchool.name },
         courses,

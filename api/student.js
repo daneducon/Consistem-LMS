@@ -536,8 +536,10 @@ export default async function handler(req, res) {
     if (!targetSchool) {
       return res.status(403).json({ error: 'Escola selecionada não autorizada.' });
     }
-    const schoolCourses = await fetchCoursesFromSchool(targetSchool.apiKey);
-    const schoolPackages = await fetchPackagesFromSchool(targetSchool.apiKey).catch(() => []);
+    const [schoolCourses, schoolPackages] = await Promise.all([
+      fetchCoursesFromSchool(targetSchool.apiKey),
+      fetchPackagesFromSchool(targetSchool.apiKey).catch(() => []),
+    ]);
     const inactiveStatuses = new Set(['inativo', 'inactive', 'arquivado', 'archived']);
     const allowedCourseIds = new Set(
       schoolCourses
